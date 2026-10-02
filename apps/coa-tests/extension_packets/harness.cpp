@@ -1,6 +1,8 @@
+#include "AscensionCoATalentState.h"
 #include "AscensionCollectibleSpellData.h"
 #include "ItemTemplate.h"
 #include "Optional.h"
+#include "Tokenize.h"
 #include "WorldPacket.h"
 #include <algorithm>
 #include <array>
@@ -50,6 +52,7 @@ std::tm* localtime_r(time_t const* time, std::tm* result)
 #endif
 
 // ACTUAL_TIME_BREAKDOWN
+// ACTUAL_TOKENIZE
 // ACTUAL_BYTE_BUFFER
 
 namespace
@@ -359,9 +362,62 @@ struct AscensionClassService
 
     std::vector<uint32> Uploads;
     std::vector<uint32> Resets;
+    std::vector<uint32> Locked;
+    std::vector<uint32> Unlocked;
+    std::vector<uint32> Unlearns;
+    std::vector<uint32> Purges;
+    std::vector<uint32> Previews;
+    std::vector<uint32> ScopedResets;
 
     void QueueKnownEntriesUpload(uint32 accountId, WorldPacket const&) { Uploads.push_back(accountId); }
     void QueueTalentReset(uint32 accountId) { Resets.push_back(accountId); }
+    void QueuePreviewRequest(uint32 accountId, uint32 specId) { Previews.push_back(specId); }
+    void QueueScopedReset(uint32 accountId, uint32 tabId) { ScopedResets.push_back(tabId); }
+    void QueueEntryLockRequest(uint32, uint32 entryId, bool locked)
+    {
+        (locked ? Locked : Unlocked).push_back(entryId);
+    }
+    void QueueEntryUnlearn(uint32, uint32 entryId) { Unlearns.push_back(entryId); }
+    void QueueAbilitiesPurge(uint32 accountId) { Purges.push_back(accountId); }
+
+    struct LoadoutRequest
+    {
+        uint32 AccountId = 0;
+        uint16 Opcode = 0;
+        std::string Uuid;
+        std::string Name;
+        uint32 SortOrder = 0;
+    };
+
+    struct AbilityRoll
+    {
+        uint32 AccountId = 0;
+        std::vector<uint32> Ids;
+        bool IsAbility = false;
+    };
+
+    std::vector<LoadoutRequest> Loadouts;
+    std::vector<AbilityRoll> Rolls;
+
+    void QueueLoadoutActivate(uint32 accountId, std::string uuid)
+    {
+        Loadouts.push_back({ accountId, CMSG_CHARACTER_ADVANCEMENT_LOADOUT_ACTIVATE, std::move(uuid), {}, 0 });
+    }
+    void QueueLoadoutName(uint32 accountId, std::string uuid, std::string name)
+    {
+        Loadouts.push_back({ accountId, CMSG_CHARACTER_ADVANCEMENT_LOADOUT_SET_NAME, std::move(uuid),
+            std::move(name), 0 });
+    }
+    void QueueLoadoutSortOrder(uint32 accountId, std::string uuid, uint32 sortOrder)
+    {
+        Loadouts.push_back({ accountId, CMSG_CHARACTER_ADVANCEMENT_LOADOUT_SET_SORT_ORDER, std::move(uuid),
+            {}, sortOrder });
+    }
+    void QueueAbilityRoll(uint32 accountId, std::vector<uint32> ids, bool isAbility)
+    {
+        Rolls.push_back({ accountId, std::move(ids), isAbility });
+    }
+
     void SendInspectResult(Player*, ObjectGuid) { }
 };
 
@@ -1073,6 +1129,108 @@ void TestTalentRequests()
     Check(consumed && service.Uploads == std::vector<uint32>{session.GetAccountId()} &&
         service.Resets == std::vector<uint32>{session.GetAccountId()},
         "the native known-entries upload and talent reset are consumed and queued for the account");
+
+    service.Locked.clear();
+    service.Unlocked.clear();
+    WorldPacket lock(CMSG_CHARACTER_ADVANCEMENT_LOCK_ENTRY, 4);
+    lock << uint32(7131);
+    WorldPacket unlock(CMSG_CHARACTER_ADVANCEMENT_UNLOCK_ENTRY, 4);
+    unlock << uint32(7131);
+    WorldPacket shortLock(CMSG_CHARACTER_ADVANCEMENT_LOCK_ENTRY, 3);
+    shortLock << uint8(0x93);
+    bool const locksConsumed = !Receive(session, lock) && !Receive(session, unlock) &&
+        !Receive(session, shortLock);
+    Check(locksConsumed && service.Locked == std::vector<uint32>{7131} &&
+        service.Unlocked == std::vector<uint32>{7131},
+        "lock and unlock are consumed with their entry id, and a short packet queues no request");
+
+    service.Unlearns.clear();
+    service.Purges.clear();
+    WorldPacket unlearnWildcard(CMSG_WILDCARD_UNLEARN_ABILITY, 4);
+    unlearnWildcard << uint32(12264);
+    WorldPacket shortUnlearn(CMSG_WILDCARD_UNLEARN_ABILITY, 3);
+    shortUnlearn << uint8(0xB0);
+    WorldPacket purgeAbilities(CMSG_CA_UNLEARN_SPELL_ALL, 0);
+    bool const actionsConsumed = !Receive(session, unlearnWildcard) &&
+        !Receive(session, shortUnlearn) && !Receive(session, purgeAbilities);
+    Check(actionsConsumed && service.Unlearns == std::vector<uint32>{12264} &&
+        service.Purges == std::vector<uint32>{session.GetAccountId()},
+        "the wildcard unlearn carries its entry id and the abilities purge needs none, "
+        "and a short unlearn queues no request");
+}
+
+void TestLoadoutAndRollRequests()
+{
+    AscensionClassService& service = AscensionClassService::Instance();
+    WorldSession session;
+    std::string const uuid = "2f4a1c9e-0dc5-4c67-9d0e-8a5c4f2a1b30";
+
+    service.Loadouts.clear();
+    WorldPacket activate(CMSG_CHARACTER_ADVANCEMENT_LOADOUT_ACTIVATE, 40);
+    activate << uuid;
+    WorldPacket rename(CMSG_CHARACTER_ADVANCEMENT_LOADOUT_SET_NAME, 48);
+    rename << uuid << std::string("PvP");
+    WorldPacket sort(CMSG_CHARACTER_ADVANCEMENT_LOADOUT_SET_SORT_ORDER, 44);
+    sort << uuid << uint32(3);
+    bool const loadoutsConsumed = !Receive(session, activate) && !Receive(session, rename) &&
+        !Receive(session, sort);
+    Check(loadoutsConsumed && service.Loadouts.size() == 3 &&
+        service.Loadouts[0].AccountId == session.GetAccountId() &&
+        service.Loadouts[0].Opcode == CMSG_CHARACTER_ADVANCEMENT_LOADOUT_ACTIVATE &&
+        service.Loadouts[0].Uuid == uuid &&
+        service.Loadouts[1].Opcode == CMSG_CHARACTER_ADVANCEMENT_LOADOUT_SET_NAME &&
+        service.Loadouts[1].Uuid == uuid && service.Loadouts[1].Name == "PvP" &&
+        service.Loadouts[2].Opcode == CMSG_CHARACTER_ADVANCEMENT_LOADOUT_SET_SORT_ORDER &&
+        service.Loadouts[2].Uuid == uuid && service.Loadouts[2].SortOrder == 3,
+        "the loadout activate, rename and sort requests are consumed and queued with their uuid, "
+        "name and sort order");
+
+    service.Loadouts.clear();
+    WorldPacket emptyUuid(CMSG_CHARACTER_ADVANCEMENT_LOADOUT_ACTIVATE, 1);
+    emptyUuid << uint8(0);
+    WorldPacket trailingByte(CMSG_CHARACTER_ADVANCEMENT_LOADOUT_ACTIVATE, 40);
+    trailingByte << uuid << uint8(0);
+    WorldPacket unterminatedUuid(CMSG_CHARACTER_ADVANCEMENT_LOADOUT_ACTIVATE, 40);
+    unterminatedUuid.append(reinterpret_cast<uint8 const*>(uuid.data()), uuid.size());
+    WorldPacket shortSort(CMSG_CHARACTER_ADVANCEMENT_LOADOUT_SET_SORT_ORDER, 40);
+    shortSort << uuid;
+    WorldPacket longName(CMSG_CHARACTER_ADVANCEMENT_LOADOUT_SET_NAME, 200);
+    longName << uuid << std::string(300, 'n');
+    WorldPacket missingName(CMSG_CHARACTER_ADVANCEMENT_LOADOUT_SET_NAME, 40);
+    missingName << uuid;
+    bool const malformedConsumed = !Receive(session, emptyUuid) && !Receive(session, trailingByte) &&
+        !Receive(session, unterminatedUuid) && !Receive(session, shortSort) && !Receive(session, longName) &&
+        !Receive(session, missingName);
+    Check(malformedConsumed && service.Loadouts.empty(),
+        "an empty, unterminated, trailing, short or over-long loadout request is consumed but queues nothing");
+
+    service.Rolls.clear();
+    WorldPacket quickRoll(CMSG_WILDCARD_ROLL_ABILITIES, 16);
+    quickRoll << uint32(0) << uint32(0) << uint32(0) << uint8(0);
+    WorldPacket rapidRoll(CMSG_WILDCARD_ROLL_ABILITIES, 40);
+    rapidRoll << uint32(3) << uint32(2) << uint32(7131) << uint32(12264) << uint32(1) << uint32(77) << uint8(1);
+    bool const rollsConsumed = !Receive(session, quickRoll) && !Receive(session, rapidRoll);
+    Check(rollsConsumed && service.Rolls.size() == 2 &&
+        service.Rolls[0].AccountId == session.GetAccountId() && service.Rolls[0].Ids.empty() &&
+        !service.Rolls[0].IsAbility && service.Rolls[1].Ids == std::vector<uint32>{7131, 12264} &&
+        service.Rolls[1].IsAbility,
+        "the roll after a wildcard unlearn is consumed with its desired entries and kind");
+
+    service.Rolls.clear();
+    WorldPacket truncatedIds(CMSG_WILDCARD_ROLL_ABILITIES, 16);
+    truncatedIds << uint32(1) << uint32(2) << uint32(7131);
+    WorldPacket manyIds(CMSG_WILDCARD_ROLL_ABILITIES, 16);
+    manyIds << uint32(1) << uint32(MAX_WILDCARD_ROLL_DESIRED_ENTRIES + 1);
+    WorldPacket truncatedTags(CMSG_WILDCARD_ROLL_ABILITIES, 20);
+    truncatedTags << uint32(1) << uint32(0) << uint32(2) << uint32(77);
+    WorldPacket manyTags(CMSG_WILDCARD_ROLL_ABILITIES, 20);
+    manyTags << uint32(1) << uint32(0) << uint32(MAX_WILDCARD_ROLL_DESIRED_ENTRIES + 1);
+    WorldPacket shortKind(CMSG_WILDCARD_ROLL_ABILITIES, 16);
+    shortKind << uint32(1) << uint32(0) << uint32(0);
+    bool const malformedRolls = !Receive(session, truncatedIds) && !Receive(session, manyIds) &&
+        !Receive(session, truncatedTags) && !Receive(session, manyTags) && !Receive(session, shortKind);
+    Check(malformedRolls && service.Rolls.empty(),
+        "a truncated, over-counted or kind-less roll is consumed but queues nothing");
 }
 
 void TestCoreHandledRequests()
@@ -1103,6 +1261,7 @@ int main()
     TestWorldEntryResend();
     TestStorePackets();
     TestTalentRequests();
+    TestLoadoutAndRollRequests();
     TestCoreHandledRequests();
     TestItemQueries();
     TestVanityDelivery();

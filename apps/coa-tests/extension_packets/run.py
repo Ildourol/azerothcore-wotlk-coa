@@ -52,6 +52,7 @@ def main():
     objects = source('src/server/game/Globals/ObjectMgr.h')
     buffer = source('src/server/shared/Packets/ByteBuffer.cpp')
     timer = source('src/common/Utilities/Timer.cpp')
+    tokenize = source('src/common/Utilities/Tokenize.cpp')
     player_script = source('src/server/game/Scripting/ScriptDefines/PlayerScript.h')
     harness = (HERE / 'harness.cpp').read_text(encoding='utf-8')
     for marker, text in [
@@ -61,6 +62,7 @@ def main():
             'void ByteBuffer::AppendPackedTime(time_t time)',
         ))),
         ('TIME_BREAKDOWN', method(timer, 'std::tm Acore::Time::TimeBreakdown(')),
+        ('TOKENIZE', method(tokenize, 'std::vector<std::string_view> Acore::Tokenize(')),
         ('GET_LOCALE_STRING', method(objects, 'static inline void GetLocaleString(std::vector<std::string> const&')),
         ('ITEM_QUERY', method(items, 'void WorldSession::HandleItemQuerySingleOpcode(') + '\n' + method_or(
             items, 'void WorldSession::SendItemQuerySingleResponse(',
