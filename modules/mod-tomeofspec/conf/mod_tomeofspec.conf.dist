@@ -1,0 +1,66 @@
+###################################################################################################
+#  mod-tomeofspec
+#
+#  The Tomes of Specialization and the specification slots they unlock.  See
+#  modules/mod-tomeofspec/README.md.
+#
+#  A slot is a loadout slot - an independent preset of archetype, build and action bar.  A slot
+#  that was never configured is entered fresh (no archetype, nothing spent, an empty bar); nothing
+#  is copied from the slot being left.  Switching slots applies that slot's own record through the
+#  core's own talent path, so every slot obeys the same validation, gates and archetype rules as
+#  slot one - and the same per-slot action-bar swap.
+#
+#  The player's click is the client's own cast of the slot's swap spell (a five second cast the
+#  client shows and can interrupt); the spell names the slot, and the switch runs when that cast
+#  completes.  A slot switch carries no unlearn bill - the Tome paid for the slot - but changing
+#  the archetype inside a slot stays the core's own priced departure.
+###################################################################################################
+
+[worldserver]
+
+###################################################################################################
+#  TomeOfSpec.Enable
+#        Enable the module: the twenty specialization slots, their saved builds, the slot switch
+#        behind the swap spells and the slot number the core's own specialization push carries.
+#        Set to 0 to leave characters exactly as the core leaves them.
+#        Default:     1 - enabled
+#                     0 - disabled
+###################################################################################################
+TomeOfSpec.Enable = 1
+
+###################################################################################################
+#  TomeOfSpec.GrantStartingSlot
+#        Grant the first slot's swap spell on login.  Slot one has no tome in the item data and the
+#        client gates every row of its specialization list on knowing that spell, so without this
+#        the first row would stay locked on every character.
+#        Default:     1 - granted
+#                     0 - not granted (only characters that already know the spell can open it)
+###################################################################################################
+TomeOfSpec.GrantStartingSlot = 1
+
+###################################################################################################
+#  TomeOfSpec.AnnounceUnlocks
+#        Send a chat notice when a Tome of Specialization is used and a new slot becomes available.
+#        Default:     1 - announced
+#                     0 - silent
+###################################################################################################
+TomeOfSpec.AnnounceUnlocks = 1
+
+###################################################################################################
+#  TomeOfSpec.LogLevel
+#        0 - problems only
+#        1 - changes and summaries (default)
+#        2 - per-push detail
+#        Default:     1
+###################################################################################################
+TomeOfSpec.LogLevel = 1
+
+###################################################################################################
+#  TomeOfSpec.StateSyncDelayMs - removed
+#
+#        The earlier implementation corrected the slot number and the unlocked count from a timer
+#        that fired after the core had pushed its own 0x0725.  The correction is structural now:
+#        the core asks this module what the two fields mean for the character every time it writes
+#        that packet (SetAscensionActiveSpecSlotProvider), so there is no second push and nothing
+#        to wait for.  A value left behind in a deployed conf is not read.
+###################################################################################################
