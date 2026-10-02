@@ -24,6 +24,7 @@
 #include "ArenaTeamMgr.h"
 #include "ArenaSeasonMgr.h"
 #include "AscensionPooledVitality.h"
+#include "../../../coa/AscensionSpecialization.h"
 #include "Battlefield.h"
 #include "BattlefieldMgr.h"
 #include "BattlefieldWG.h"
@@ -3243,6 +3244,8 @@ void Player::_addTalentAurasAndSpells(uint32 spellId)
 
 void Player::SendLearnPacket(uint32 spellId, bool learn)
 {
+    if (IsAscensionTalentStateApplying(this))
+        return;
     if (learn)
     {
         WorldPacket data(SMSG_LEARNED_SPELL, 6);
@@ -3260,6 +3263,8 @@ void Player::SendLearnPacket(uint32 spellId, bool learn)
 
 bool Player::addSpell(uint32 spellId, uint8 addSpecMask, bool updateActive, bool temporary /*= false*/, bool learnFromSkill /*= false*/)
 {
+    if (!CanLearnAscensionTalentSpell(this, spellId))
+        return false;
     if (!_addSpell(spellId, addSpecMask, temporary, learnFromSkill))
         return false;
 
@@ -3507,6 +3512,8 @@ bool Player::IsNeedCastPassiveSpellAtLearn(SpellInfo const* spellInfo) const
 
 void Player::learnSpell(uint32 spellId, bool temporary /*= false*/, bool learnFromSkill /*= false*/)
 {
+    if (!CanLearnAscensionTalentSpell(this, spellId))
+        return;
     if (IsAscensionClass(getClass()))
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId))
             if (spellInfo->IsDeprecatedForPlayers)
@@ -3627,12 +3634,12 @@ void Player::removeSpell(uint32 spell_id, uint8 removeSpecMask, bool onlyTempora
     // pussywizard: remove non-talent higher ranks (recursive)
     // pussywizard: do this at the beginning, not in the middle of removing!
     if (uint32 nextSpell = sSpellMgr->GetNextSpellInChain(spell_id))
-        if (!GetTalentSpellPos(nextSpell))
+        if (!GetTalentSpellPos(nextSpell) && !IsAscensionTalentStateApplying(this))
             removeSpell(nextSpell, removeSpecMask, onlyTemporary);
 
     // xinef: if current spell has talentcost, remove spells requiring this spell
     uint32 firstRankSpellId = sSpellMgr->GetFirstSpellInChain(spell_id);
-    if (GetTalentSpellCost(firstRankSpellId))
+    if (GetTalentSpellCost(firstRankSpellId) && !IsAscensionTalentStateApplying(this))
     {
         SpellsRequiringSpellMapBounds spellsRequiringSpell = sSpellMgr->GetSpellsRequiringSpellBounds(firstRankSpellId);
         for (auto spellsItr = spellsRequiringSpell.first; spellsItr != spellsRequiringSpell.second; ++spellsItr)

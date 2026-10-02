@@ -140,6 +140,7 @@
 #include "AscensionLiveBaselineData.h"
 #include "AscensionRacialAbilities.h"
 #include "AscensionSpellProgressionData.h"
+#include "AscensionSpecialization.h"
 #include "AscensionTalentReplacementData.h"
 #include "AscensionTaughtAbilityData.h"
 
@@ -938,12 +939,18 @@ void StripOtherClassSkills(Player* player, ClassKit const& kit, uint32& removed)
 }
 
 // The class-dependent half of a character's talent state that does not live in the spell book:
-// which specialization is chosen and the stored builds the realm keeps per specialization
-// (the CoA library's "core.ascension_active_spec" and "core.ascension_build.<spec>" settings).
+// which specialization is chosen and the stored builds the realm keeps per specialization.
 // A character created as the class being entered has neither, and a build stored under the old
 // class's specialization is exactly the dormant data a hybrid class state hides in.  The
 // specialization has to be cleared where the realm reads it, so the login that follows this change
 // finds none chosen and grants only the class tree's free nodes.
+//
+// Asked of the CoA library, which owns where that state lives.  This module used to write the
+// settings itself - "core.ascension_active_spec" and "core.ascension_build.<spec>" for every
+// archetype - and the second name is one nothing has written since the build and the
+// per-specialization loadouts were folded into a single setting, so a class change cleared the
+// archetype and left every stored build and loadout of the old class behind
+// (AscensionCompat's ClearAscensionTalentState).
 //
 // "core.ascension_starter" is set as well, and for a different reason: the realm's login pass would
 // otherwise repair the starter kit of the class being entered (AscensionClassService::RepairStarterKit),
@@ -951,18 +958,7 @@ void StripOtherClassSkills(Player* player, ClassKit const& kit, uint32& removed)
 // has and hands out none.
 void ClearTalentState(Player* player)
 {
-    auto clear = [player](std::string const& setting) { player->UpdatePlayerSetting(setting, 0, 0); };
-
-    clear("core.ascension_active_spec");
-
-    std::set<uint16> specializations;
-    for (AscensionCompatData::CoATalentEntry const& entry : AscensionCompatData::CoATalentEntries)
-        if (entry.SpecId)
-            specializations.insert(entry.SpecId);
-
-    for (uint16 specialization : specializations)
-        clear(std::string("core.ascension_build.") + std::to_string(specialization));
-
+    ClearAscensionTalentState(player);
     player->UpdatePlayerSetting("core.ascension_starter", 0, 1);
 }
 
