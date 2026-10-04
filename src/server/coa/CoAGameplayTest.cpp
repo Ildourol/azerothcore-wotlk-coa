@@ -2187,6 +2187,18 @@ private:
             });
             return objects.size();
         }
+        if (metric == "nearby_gameobject_locked")
+        {
+            std::list<GameObject*> objects;
+            player->GetGameObjectListWithEntryInGrid(objects, step.get<uint32>("entry"), 20.0f);
+            objects.remove_if([player](GameObject* object)
+            {
+                return !object->IsInWorld() || !player->InSamePhase(object);
+            });
+            Require(objects.size() == 1, "Nearby gameobject lock needs exactly one object");
+            GameObject const* object = objects.front();
+            return object->GetGOInfo()->GetLockId() != 0 || object->HasGameObjectFlag(GO_FLAG_LOCKED);
+        }
         if (metric == "loot_bloodforged")
         {
             Loot* window = nullptr;

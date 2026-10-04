@@ -72,7 +72,7 @@ METRICS = {
     'who_count', 'who_class', 'player_name', 'name_lookup', 'loot_count', 'loot_entry', 'loot_received',
     'loot_gold', 'loot_bloodforged', 'loot_required_level', 'loot_item_level', 'loot_base_entry', 'loot_item_armor',
     'carried_item_level', 'carried_item_required_level',
-    'nearby_gameobject_count', 'nearby_creature_count', 'carried_money',
+    'nearby_gameobject_count', 'nearby_gameobject_locked', 'nearby_creature_count', 'carried_money',
     'quest_rewarded', 'has_achievement', 'has_title', 'spell_damage_taken', 'melee_damage_taken', 'spell_healing_taken',
     'spell_hit_bonus_taken', 'rooted', 'stunned', 'spell_cast_count', 'spell_go_count', 'cast_failure',
     'stealth_detection', 'can_detect',

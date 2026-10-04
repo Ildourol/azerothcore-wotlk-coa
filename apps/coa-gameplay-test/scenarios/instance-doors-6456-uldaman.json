@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "Uldaman: instance doors Ascension leaves unlocked need no key (#6456)",
+  "contract": "#6456 Ascension's CoA client data (the conquest-of-azeroth gameobject cache, AscensionDB) has these instance doors with no lock (Data1 0), so Dungeon Finder groups without the key or Lockpicking can open them. This fork locked them with a key/lockpicking lock and GO_FLAG_LOCKED, which the client enforces. Expected: each spawned door has no lock id and no GO_FLAG_LOCKED.",
+  "timeout_ms": 90000,
+  "location": {"map": 70, "x": -234.688, "y": 239.619, "z": -49.9083, "o": 0.0, "ignore_access": true},
+  "players": [
+    {"id": "hero", "race": 1, "class": 1, "level": 60}
+  ],
+  "steps": [
+    {"action": "wait", "label": "Let the instance load", "ms": 3000},
+    {"action": "assert", "actor": "hero", "metric": "map_id", "equals": 70, "label": "CONTROL: the hero is in Uldaman"},
+    {"action": "set_phase", "actor": "hero", "value": 1},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 124371, "equals": 1, "label": "CONTROL: Keystone 124371 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 124371, "equals": 0, "label": "Keystone 124371 needs no key or Lockpicking"}
+  ]
+}

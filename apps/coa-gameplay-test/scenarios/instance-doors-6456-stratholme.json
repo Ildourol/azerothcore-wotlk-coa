@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "name": "Stratholme: instance doors Ascension leaves unlocked need no key (#6456)",
+  "contract": "#6456 Ascension's CoA client data (the conquest-of-azeroth gameobject cache, AscensionDB) has these instance doors with no lock (Data1 0), so Dungeon Finder groups without the key or Lockpicking can open them. This fork locked them with a key/lockpicking lock and GO_FLAG_LOCKED, which the client enforces. Expected: each spawned door has no lock id and no GO_FLAG_LOCKED.",
+  "timeout_ms": 90000,
+  "location": {"map": 329, "x": 3624.91, "y": -3642.16, "z": 139.445, "o": 0.0, "ignore_access": true},
+  "players": [
+    {"id": "hero", "race": 1, "class": 1, "level": 60}
+  ],
+  "steps": [
+    {"action": "wait", "label": "Let the instance load", "ms": 3000},
+    {"action": "assert", "actor": "hero", "metric": "map_id", "equals": 329, "label": "CONTROL: the hero is in Stratholme"},
+    {"action": "set_phase", "actor": "hero", "value": 1},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 175368, "equals": 1, "label": "CONTROL: Service Entrance Gate 175368 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 175368, "equals": 0, "label": "Service Entrance Gate 175368 needs no key or Lockpicking"},
+    {"action": "teleport", "actor": "hero", "map": 329, "x": 3727.29, "y": -3599.08, "z": 143.22},
+    {"action": "wait", "ms": 1000},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 175357, "equals": 1, "label": "CONTROL: Gauntlet Gate 175357 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 175357, "equals": 0, "label": "Gauntlet Gate 175357 needs no key or Lockpicking"},
+    {"action": "teleport", "actor": "hero", "map": 329, "x": 3782.58, "y": -3590.48, "z": 144.987},
+    {"action": "wait", "ms": 1000},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 175356, "equals": 1, "label": "CONTROL: Gauntlet Gate 175356 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 175356, "equals": 0, "label": "Gauntlet Gate 175356 needs no key or Lockpicking"}
+  ]
+}

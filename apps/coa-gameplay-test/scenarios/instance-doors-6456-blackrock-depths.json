@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "name": "Blackrock Depths: instance doors Ascension leaves unlocked need no key (#6456)",
+  "contract": "#6456 Ascension's CoA client data (the conquest-of-azeroth gameobject cache, AscensionDB) has these instance doors with no lock (Data1 0), so Dungeon Finder groups without the key or Lockpicking can open them. This fork locked them with a key/lockpicking lock and GO_FLAG_LOCKED, which the client enforces. Expected: each spawned door has no lock id and no GO_FLAG_LOCKED.",
+  "timeout_ms": 90000,
+  "location": {"map": 230, "x": 496.397, "y": 16.0126, "z": -69.2566, "o": 0.0, "ignore_access": true},
+  "players": [
+    {"id": "hero", "race": 1, "class": 1, "level": 60}
+  ],
+  "steps": [
+    {"action": "wait", "label": "Let the instance load", "ms": 3000},
+    {"action": "assert", "actor": "hero", "metric": "map_id", "equals": 230, "label": "CONTROL: the hero is in Blackrock Depths"},
+    {"action": "set_phase", "actor": "hero", "value": 1},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 170559, "equals": 1, "label": "CONTROL: Shadowforge Gate 170559 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 170559, "equals": 0, "label": "Shadowforge Gate 170559 needs no key or Lockpicking"},
+    {"action": "teleport", "actor": "hero", "map": 230, "x": 569.589, "y": -9.36154, "z": -69.2566},
+    {"action": "wait", "ms": 1000},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 170560, "equals": 1, "label": "CONTROL: Shadowforge Gate 170560 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 170560, "equals": 0, "label": "Shadowforge Gate 170560 needs no key or Lockpicking"},
+    {"action": "teleport", "actor": "hero", "map": 230, "x": 560.531, "y": -51.8159, "z": -59.094},
+    {"action": "wait", "ms": 1000},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 170570, "equals": 1, "label": "CONTROL: East Garrison Door 170570 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 170570, "equals": 0, "label": "East Garrison Door 170570 needs no key or Lockpicking"},
+    {"action": "teleport", "actor": "hero", "map": 230, "x": 615.614, "y": -49.7823, "z": -59.0557},
+    {"action": "wait", "ms": 1000},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 161460, "equals": 1, "label": "CONTROL: The Shadowforge Lock 161460 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 161460, "equals": 0, "label": "The Shadowforge Lock 161460 needs no key or Lockpicking"},
+    {"action": "teleport", "actor": "hero", "map": 230, "x": 1311.48, "y": -343.072, "z": -91.0093},
+    {"action": "wait", "ms": 1000},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 170558, "equals": 1, "label": "CONTROL: The Lyceum 170558 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 170558, "equals": 0, "label": "The Lyceum 170558 needs no key or Lockpicking"}
+  ]
+}

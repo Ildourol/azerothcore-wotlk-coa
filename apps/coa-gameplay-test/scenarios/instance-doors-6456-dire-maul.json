@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "name": "Dire Maul: instance doors Ascension leaves unlocked need no key (#6456)",
+  "contract": "#6456 Ascension's CoA client data (the conquest-of-azeroth gameobject cache, AscensionDB) has these instance doors with no lock (Data1 0), so Dungeon Finder groups without the key or Lockpicking can open them. This fork locked them with a key/lockpicking lock and GO_FLAG_LOCKED, which the client enforces. Expected: each spawned door has no lock id and no GO_FLAG_LOCKED.",
+  "timeout_ms": 90000,
+  "location": {"map": 429, "x": 50.5863, "y": 501.94, "z": -22.1499, "o": 0.0, "ignore_access": true},
+  "players": [
+    {"id": "hero", "race": 1, "class": 1, "level": 60}
+  ],
+  "steps": [
+    {"action": "wait", "label": "Let the instance load", "ms": 3000},
+    {"action": "assert", "actor": "hero", "metric": "map_id", "equals": 429, "label": "CONTROL: the hero is in Dire Maul"},
+    {"action": "set_phase", "actor": "hero", "value": 1},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 177221, "equals": 1, "label": "CONTROL: Door 177221 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 177221, "equals": 0, "label": "Door 177221 needs no key or Lockpicking"},
+    {"action": "teleport", "actor": "hero", "map": 429, "x": 351.568, "y": 88.6734, "z": -35.393},
+    {"action": "wait", "ms": 1000},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_count", "entry": 179549, "equals": 1, "label": "CONTROL: Door 179549 is spawned next to the hero"},
+    {"action": "assert", "actor": "hero", "metric": "nearby_gameobject_locked", "entry": 179549, "equals": 0, "label": "Door 179549 needs no key or Lockpicking"}
+  ]
+}
