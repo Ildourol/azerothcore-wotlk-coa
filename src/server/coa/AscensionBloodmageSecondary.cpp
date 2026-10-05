@@ -1,4 +1,5 @@
 /* Copyright (C) 2016+ AzerothCore, GNU AGPL v3. */
+#include "AscensionClientSpellPatches.h"
 #include "AscensionPooledVitality.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
@@ -782,6 +783,7 @@ public:
 
 void AddSC_AscensionBloodmageSecondary()
 {
+    Ascension::ClientSpellPatches::Instance().Register(SPELL_RUNNING_WILD);
     RegisterSpellScript(spell_ascension_bloodmage_bloodfang_bite);
     RegisterSpellScript(aura_ascension_bloodmage_bite_wound);
     RegisterSpellScript(aura_ascension_bloodmage_sacrificial_rite);

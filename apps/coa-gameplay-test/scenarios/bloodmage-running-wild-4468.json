@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "Bloodmage: Running Wild is offered at level 20 and works (#4468)",
-  "contract": "#4468 'Running Wild is missing' (Eternal Bloodmage). Running Wild 800175 is a Bloodmage class spell at level 20 in AscensionCompatData::ClassSpells, which mod-spellbook's BuildRows offers; class spells are not auto-learned while CoA.AutoProgression = 0. 800175 is outdoors only, 1 s cast, no stance requirement, +60% speed. Expected: a level-35 Bloodmage sees Running Wild in the spellbook trainer window, can buy it, knows it, and gains the aura when casting it outdoors.",
+  "contract": "#4468 'Running Wild is missing' (Eternal Bloodmage). Running Wild 800175 is a Bloodmage class spell at level 20 in AscensionCompatData::ClassSpells, which mod-spellbook's BuildRows offers; class spells are not auto-learned while CoA.AutoProgression = 0. 800175 is outdoors only, instant since #6384, no stance requirement, +60% speed. Expected: a level-35 Bloodmage sees Running Wild in the spellbook trainer window, can buy it, knows it, and gains the aura when casting it outdoors.",
   "timeout_ms": 90000,
   "players": [
     { "id": "b", "race": 1, "class": 20, "level": 35 }
