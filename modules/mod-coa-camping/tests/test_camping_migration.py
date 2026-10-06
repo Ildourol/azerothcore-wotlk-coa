@@ -7,6 +7,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[3]
 MIGRATION = ROOT / 'data/sql/updates/pending_db_world/rev_20261005_01_coa_camping.sql'
 FURNITURE = ROOT / 'data/sql/updates/pending_db_world/rev_20261006_01_coa_camping_furniture.sql'
+LAYOUT = ROOT / 'data/sql/updates/pending_db_world/rev_20261006_02_coa_camping_layout.sql'
 spec = importlib.util.spec_from_file_location(
     'camping_mysql_fixture', ROOT / 'apps/test-framework/test_enchantment_migrations.py')
 fixture = importlib.util.module_from_spec(spec)
@@ -93,6 +94,30 @@ class CampingMigration(unittest.TestCase):
         self.query(FURNITURE.read_text(encoding='utf-8'))
         self.assertEqual(self.furniture_rows(), before)
         self.query(FURNITURE.read_text(encoding='utf-8'))
+        self.assertEqual(self.furniture_rows(), before)
+
+    def test_layout_scales_owned_templates_and_repeats_without_other_changes(self):
+        self.query(FURNITURE.read_text(encoding='utf-8'))
+        self.query(LAYOUT.read_text(encoding='utf-8'))
+        self.assertEqual(self.query('SELECT `entry`, `size` FROM `gameobject_template` '
+                                    'WHERE `entry` IN (9500202, 9500204, 9500205) ORDER BY `entry`;'),
+                         [('9500202', '1'), ('9500204', '0.35'), ('9500205', '0.35')])
+        self.assertEqual(self.query('SELECT `type`, `displayId`, `name`, `size` '
+                                    'FROM `gameobject_template` WHERE `entry` = 29784;'),
+                         [('8', '192', 'Basic Campfire', '1')])
+        before = self.furniture_rows()
+        self.query(LAYOUT.read_text(encoding='utf-8'))
+        self.assertEqual(self.furniture_rows(), before)
+
+    def test_layout_preserves_foreign_templates_and_custom_scales(self):
+        self.query(FURNITURE.read_text(encoding='utf-8'))
+        self.query('UPDATE `gameobject_template` SET `size` = 0.75 WHERE `entry` = 9500202;')
+        self.query("UPDATE `gameobject_template` SET `name` = 'Other banner' WHERE `entry` = 9500204;")
+        self.query('UPDATE `gameobject_template` SET `displayId` = 999 WHERE `entry` = 9500205;')
+        before = self.furniture_rows()
+        self.query(LAYOUT.read_text(encoding='utf-8'))
+        self.assertEqual(self.furniture_rows(), before)
+        self.query(LAYOUT.read_text(encoding='utf-8'))
         self.assertEqual(self.furniture_rows(), before)
 
 

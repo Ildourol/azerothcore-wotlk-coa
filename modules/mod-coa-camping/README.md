@@ -9,10 +9,10 @@ its core-side additions are native gameplay test actions and measurements.
 The normal `MODULES=static` build discovers this directory and `Addmod_coa_campingScripts`. Reconfigure CMake
 after adding it. Set `-DMODULE_MOD-COA-CAMPING=disabled` to exclude the entire module, including its unit tests.
 
-The two pending camping migrations add supplies, furniture and service templates. Let the normal updater
-apply them to the chosen deployment. Reserved template collisions are preserved; enabled startup rejects
-incompatible mappings. The already applied first migration stays unchanged. No existing fire, spell or Ranger
-template is changed.
+The three pending camping migrations add supplies, furniture and service templates and adjust their scale.
+Let the normal updater apply them to the chosen deployment. Reserved template collisions are preserved;
+enabled startup rejects incompatible mappings. The already applied first two migrations stay unchanged.
+No existing fire, spell or Ranger template is changed.
 
 Copy `conf/mod-coa-camping.conf.dist` to the server's module configuration directory without `.dist`, set
 `CoACamping.Enable=1`, and restart. Enabled startup rejects missing or incompatible spells, templates,
@@ -39,6 +39,11 @@ displays, materials, skills and invalid configuration. Settings are immutable un
 | Faction Banner | Tailoring 20 | 1 Bolt of Linen Cloth, 1 Coarse Thread | Same-faction Spirit: 14/19/27/32 |
 | Reagent Bot | Engineering 20 | 1 Handful of Copper Bolts, 1 Copper Tube | Standard reagents at native prices |
 | Repair Bot | Engineering 140 | 2 Whirring Bronze Gizmos, 1 Bronze Tube, 1 Heavy Leather | Reagents and paid repair |
+
+Supplies and incense sit 1.6 yards from the fire, the chair 2.4 yards, service bots 2.6 yards and the banner
+2.8 yards. The full-size tent sits 6 yards away with its open entrance facing the fire. The smaller props
+occupy the other side of the fire, keeping the entrance clear. Template scales apply to both the visible models
+and their native collision geometry. The scale migration preserves foreign templates and custom scales.
 
 Spirit bands start at levels 1, 40, 50 and 60. Banner appearance and eligibility use the contributor's faction.
 The two service choices share one family slot; repair bots can be placed directly in a camp without a service
@@ -79,9 +84,9 @@ Completed rewards retain their own one-hour lifetime after the camp is gone.
 | Fire | Spell 818, object 29784, display 192 |
 | Supplies | New object 9500200, stock alchemy-set display 345, gossip goober |
 | Candle | New object 9500201, stock candle display 100 |
-| Tent | New object 9500202, human-tent display 7194, scale 0.5 |
+| Tent | New object 9500202, human-tent display 7194, scale 1 |
 | Chair | New object 9500203, wooden-chair display 39, native single medium-height seat |
-| Banners | New objects 9500204/9500205, Alliance/Horde displays 5771/5773 |
+| Banners | New objects 9500204/9500205, Alliance/Horde displays 5771/5773, scale 0.35 |
 | Services | New creatures 9500220/9500221, repair-bot display 14379, neutral faction 190 |
 | Rewards | Effect 0 only: 1459 Intellect, 14752 Spirit, CoA's 34833 all-crit aura |
 | Contribution | Herbalism 182, base rank 20; items 2447 and 765, one each |

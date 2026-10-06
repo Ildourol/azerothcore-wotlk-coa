@@ -46,7 +46,7 @@
     {"action": "assert", "actor": "tenter", "metric": "owned_gameobject_count", "entry": 9500202,
       "equals": 1, "within_ms": 2000},
     {"action": "assert", "actor": "tenter", "metric": "gameobject_display", "entry": 9500202, "equals": 7194},
-    {"action": "assert", "actor": "tenter", "metric": "gameobject_scale", "entry": 9500202, "equals": 0.5},
+    {"action": "assert", "actor": "tenter", "metric": "gameobject_scale", "entry": 9500202, "equals": 1},
     {"action": "assert", "actor": "tenter", "metric": "item_count", "item": 2318, "equals": 0},
     {"action": "snapshot", "actor": "sleeper", "metric": "next_level_xp", "save_as": "next_level"},
     {"action": "set_rested_xp", "actor": "rested", "value": 3000},

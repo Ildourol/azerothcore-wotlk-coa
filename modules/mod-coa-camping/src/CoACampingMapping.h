@@ -71,17 +71,17 @@ struct FeatureDefinition
 };
 
 inline constexpr std::array<FeatureDefinition, 6> Features = {{
-    {Feature::Candle, CandleEntry, Herbalism, RequiredHerbalism, {{{2447, 1}, {765, 1}, {0, 0}}}, 3.0f, 2.6f,
+    {Feature::Candle, CandleEntry, Herbalism, RequiredHerbalism, {{{2447, 1}, {765, 1}, {0, 0}}}, 1.6f, 2.6f,
         "Incense Candle", "Incense Candle: Herbalism 20; 1 Peacebloom + 1 Silverleaf; +2 Intellect"},
-    {Feature::Tent, TentEntry, 165, 20, {{{2318, 5}, {0, 0}, {0, 0}}}, 8.0f, 0.0f,
+    {Feature::Tent, TentEntry, 165, 20, {{{2318, 5}, {0, 0}, {0, 0}}}, 6.0f, 0.0f,
         "Camp Tent", "Camp Tent: Leatherworking 20; 5 Light Leather; rested XP after 30 seconds"},
-    {Feature::Chair, ChairEntry, 393, 20, {{{2318, 3}, {4470, 2}, {0, 0}}}, 4.0f, 3.8f,
+    {Feature::Chair, ChairEntry, 393, 20, {{{2318, 3}, {4470, 2}, {0, 0}}}, 2.4f, 3.8f,
         "Camp Chair", "Camp Chair: Skinning 20; 3 Light Leather + 2 Simple Wood; +2% crit"},
-    {Feature::Banner, AllianceBannerEntry, 197, 20, {{{2996, 1}, {2320, 1}, {0, 0}}}, 5.0f, 5.0f,
+    {Feature::Banner, AllianceBannerEntry, 197, 20, {{{2996, 1}, {2320, 1}, {0, 0}}}, 2.8f, 5.0f,
         "Faction Banner", "Faction Banner: Tailoring 20; 1 Bolt of Linen Cloth + 1 Coarse Thread; Spirit"},
-    {Feature::ReagentBot, ReagentBotEntry, 202, 20, {{{4359, 1}, {4361, 1}, {0, 0}}}, 4.0f, 1.2f,
+    {Feature::ReagentBot, ReagentBotEntry, 202, 20, {{{4359, 1}, {4361, 1}, {0, 0}}}, 2.6f, 1.2f,
         "Reagent Bot", "Reagent Bot: Engineering 20; 1 Handful of Copper Bolts + 1 Copper Tube"},
-    {Feature::RepairBot, RepairBotEntry, 202, 140, {{{4375, 2}, {4371, 1}, {4234, 1}}}, 4.0f, 1.2f,
+    {Feature::RepairBot, RepairBotEntry, 202, 140, {{{4375, 2}, {4371, 1}, {4234, 1}}}, 2.6f, 1.2f,
         "Repair Bot", "Repair Bot: Engineering 140; 2 Whirring Bronze Gizmos + 1 Bronze Tube + 1 Heavy Leather"}
 }};
 

@@ -49,6 +49,8 @@
     {"action": "assert", "actor": "banner", "metric": "owned_gameobject_count", "entry": 9500204,
       "equals": 1, "within_ms": 2000},
     {"action": "assert", "actor": "banner", "metric": "gameobject_display", "entry": 9500204, "equals": 5771},
+    {"action": "assert", "actor": "banner", "metric": "gameobject_scale", "entry": 9500204,
+      "min": 0.3499, "max": 0.3501},
     {"action": "assert", "actor": "banner", "metric": "item_count", "item": 2996, "equals": 0},
     {"action": "assert", "actor": "banner", "metric": "item_count", "item": 2320, "equals": 0},
     {"action": "learn", "actor": "priest", "spell": 48073},

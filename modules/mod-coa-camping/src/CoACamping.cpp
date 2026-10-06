@@ -337,7 +337,7 @@ void CreateCamp(GameObject* fire)
     MapState* state = FindState(fire->GetMap());
     if (!state || state->Camps.count(fire->GetGUID()))
         return;
-    GameObject* controller = SummonProp(fire, owner, ControllerEntry, 2.0f, float(M_PI) / 2.0f,
+    GameObject* controller = SummonProp(fire, owner, ControllerEntry, 1.6f, 2.0f,
         Settings.LifetimeSeconds);
     if (!controller)
     {
