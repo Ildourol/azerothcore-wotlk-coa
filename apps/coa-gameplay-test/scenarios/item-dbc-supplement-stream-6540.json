@@ -1,0 +1,199 @@
+{
+  "schema": 1,
+  "name": "Item DBC supplement rows reach the client through the item patch stream (#6540)",
+  "contract": [
+    "Requires CoA.SendDisplayPatches=1. The client's own Item.dbc carries no row for seven items this realm",
+    "publishes through `item_dbc` because its DBC set lacks them: Red Ribboned Wrapping Paper 5042 (display",
+    "6405), Blue Ribboned Wrapping Paper 5048 (6330), Purple Ribboned Wrapping Paper 17307 (29443),",
+    "Cuirboulli Boots 2143 (2355), Magatha's Note 10678 (3024), Outrider's Bow 20437 (32079) and",
+    "Arcanite Ripper (NEW) 44924 (57733). AscensionCompat streams an SQL item row only while its id is",
+    "registered with ClientItemPatches, so an unregistered `item_dbc` row never reaches the client: the",
+    "vendor list still draws the bought wrapping paper from the item query's DisplayInfoID, but the bag",
+    "looks the entry up in the client's own table and paints a question mark. Storing one of those entries",
+    "must send its eight-field SMSG_PATCH_ITEM (0x0932) row, DisplayInfoID at index 5. The registered",
+    "Heartwood Key 1041710 is the control and keeps streaming, once per character."
+  ],
+  "timeout_ms": 60000,
+  "location": {
+    "map": 0,
+    "x": -9465,
+    "y": 64,
+    "z": 56,
+    "o": 0
+  },
+  "players": [
+    {
+      "id": "shopper",
+      "race": 2,
+      "class": 27,
+      "level": 41
+    }
+  ],
+  "steps": [
+    {
+      "action": "client_packet",
+      "actor": "shopper",
+      "opcode": 1377
+    },
+    {
+      "action": "wait",
+      "ms": 100
+    },
+    {
+      "action": "add_item",
+      "label": "Buy Red Ribboned Wrapping Paper 5042",
+      "actor": "shopper",
+      "item": 5042
+    },
+    {
+      "action": "assert",
+      "label": "The bought wrapping paper sends exactly one item patch row",
+      "actor": "shopper",
+      "metric": "server_packets",
+      "opcode": 2354,
+      "row": 5042,
+      "equals": 1,
+      "within_ms": 1000
+    },
+    {
+      "action": "assert",
+      "label": "That row carries display 6405 at index 5",
+      "actor": "shopper",
+      "metric": "server_packet_u32",
+      "opcode": 2354,
+      "row": 5042,
+      "index": 5,
+      "equals": 6405,
+      "within_ms": 1000
+    },
+    {
+      "action": "assert",
+      "label": "The row keeps the realm's class 0 and subclass 8",
+      "actor": "shopper",
+      "metric": "server_packet_u32",
+      "opcode": 2354,
+      "row": 5042,
+      "index": 2,
+      "equals": 8
+    },
+    {
+      "action": "add_item",
+      "label": "Buy Blue Ribboned Wrapping Paper 5048",
+      "actor": "shopper",
+      "item": 5048
+    },
+    {
+      "action": "assert",
+      "label": "Its row carries display 6330 at index 5",
+      "actor": "shopper",
+      "metric": "server_packet_u32",
+      "opcode": 2354,
+      "row": 5048,
+      "index": 5,
+      "equals": 6330,
+      "within_ms": 1000
+    },
+    {
+      "action": "add_item",
+      "label": "Buy Purple Ribboned Wrapping Paper 17307",
+      "actor": "shopper",
+      "item": 17307
+    },
+    {
+      "action": "assert",
+      "label": "Its row carries display 29443 at index 5",
+      "actor": "shopper",
+      "metric": "server_packet_u32",
+      "opcode": 2354,
+      "row": 17307,
+      "index": 5,
+      "equals": 29443,
+      "within_ms": 1000
+    },
+    {
+      "action": "add_item",
+      "label": "Buy Cuirboulli Boots 2143",
+      "actor": "shopper",
+      "item": 2143
+    },
+    {
+      "action": "assert",
+      "label": "Its row carries display 2355 at index 5",
+      "actor": "shopper",
+      "metric": "server_packet_u32",
+      "opcode": 2354,
+      "row": 2143,
+      "index": 5,
+      "equals": 2355,
+      "within_ms": 1000
+    },
+    {
+      "action": "add_item",
+      "label": "Obtain Magatha's Note 10678",
+      "actor": "shopper",
+      "item": 10678
+    },
+    {
+      "action": "assert",
+      "label": "Its row carries display 3024 at index 5",
+      "actor": "shopper",
+      "metric": "server_packet_u32",
+      "opcode": 2354,
+      "row": 10678,
+      "index": 5,
+      "equals": 3024,
+      "within_ms": 1000
+    },
+    {
+      "action": "add_item",
+      "label": "Obtain Outrider's Bow 20437",
+      "actor": "shopper",
+      "item": 20437
+    },
+    {
+      "action": "assert",
+      "label": "Its row carries display 32079 at index 5",
+      "actor": "shopper",
+      "metric": "server_packet_u32",
+      "opcode": 2354,
+      "row": 20437,
+      "index": 5,
+      "equals": 32079,
+      "within_ms": 1000
+    },
+    {
+      "action": "add_item",
+      "label": "Obtain Arcanite Ripper (NEW) 44924",
+      "actor": "shopper",
+      "item": 44924
+    },
+    {
+      "action": "assert",
+      "label": "Its row carries display 57733 at index 5",
+      "actor": "shopper",
+      "metric": "server_packet_u32",
+      "opcode": 2354,
+      "row": 44924,
+      "index": 5,
+      "equals": 57733,
+      "within_ms": 1000
+    },
+    {
+      "action": "add_item",
+      "label": "CONTROL: obtain the already registered Heartwood Key 1041710",
+      "actor": "shopper",
+      "item": 1041710
+    },
+    {
+      "action": "assert",
+      "label": "CONTROL: its row still carries display 171077 at index 5",
+      "actor": "shopper",
+      "metric": "server_packet_u32",
+      "opcode": 2354,
+      "row": 1041710,
+      "index": 5,
+      "equals": 171077,
+      "within_ms": 1000
+    }
+  ]
+}
