@@ -98,7 +98,7 @@
       "action": "assert",
       "actor": "owner",
       "metric": "gossip_options",
-      "equals": 1
+      "equals": 6
     },
     {
       "action": "gossip_select",

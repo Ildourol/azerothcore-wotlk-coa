@@ -97,6 +97,11 @@ inline bool CooldownActive(std::uint64_t expiresAt, std::uint64_t now)
 {
     return expiresAt > now;
 }
+
+inline std::int32_t BannerSpirit(std::uint32_t level)
+{
+    return level < 40 ? 14 : level < 50 ? 19 : level < 60 ? 27 : 32;
+}
 }
 
 #endif

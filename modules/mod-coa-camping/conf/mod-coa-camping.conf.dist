@@ -11,6 +11,9 @@ CoACamping.AllowedAreas = ""
 # Seconds, except the scan interval in milliseconds. Only managed spell-818 fires use this lifetime.
 CoACamping.LifetimeSeconds = 900
 CoACamping.RestSeconds = 60
+CoACamping.TentRestSeconds = 30
+CoACamping.TentCooldownSeconds = 3600
+CoACamping.TentRestedPercent = 5
 CoACamping.BenefitSeconds = 3600
 CoACamping.ContributionCooldownSeconds = 3600
 CoACamping.ScanMilliseconds = 1000

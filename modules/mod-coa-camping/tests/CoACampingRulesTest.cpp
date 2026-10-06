@@ -1,4 +1,5 @@
 #include "CoACampingRules.h"
+#include "CoACampingMapping.h"
 #include "gtest/gtest.h"
 
 using namespace CoACamping;
@@ -78,4 +79,26 @@ TEST(CoACamping, ContributionCooldownEndsAtItsPersistedDeadline)
     EXPECT_FALSE(CooldownActive(4600, 4601));
     EXPECT_FALSE(CooldownActive(0, 1));
     EXPECT_TRUE(CooldownActive(0x100000001ULL, 0xFFFFFFFFULL));
+}
+
+TEST(CoACamping, BannerUsesCapturedLevelBands)
+{
+    EXPECT_EQ(BannerSpirit(1), 14);
+    EXPECT_EQ(BannerSpirit(39), 14);
+    EXPECT_EQ(BannerSpirit(40), 19);
+    EXPECT_EQ(BannerSpirit(49), 19);
+    EXPECT_EQ(BannerSpirit(50), 27);
+    EXPECT_EQ(BannerSpirit(59), 27);
+    EXPECT_EQ(BannerSpirit(60), 32);
+    EXPECT_EQ(BannerSpirit(80), 32);
+}
+
+TEST(CoACamping, ServiceBotsShareOneFamilyWithoutUpgrades)
+{
+    EXPECT_EQ(Family(Feature::RepairBot), Family(Feature::ReagentBot));
+    EXPECT_NE(Family(Feature::Tent), Family(Feature::Chair));
+    EXPECT_EQ(Definition(0), nullptr);
+    EXPECT_EQ(Definition(7), nullptr);
+    ASSERT_NE(Definition(6), nullptr);
+    EXPECT_EQ(Definition(6)->Rank, 140);
 }
