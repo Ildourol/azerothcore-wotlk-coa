@@ -2,6 +2,7 @@
   "schema": 1,
   "name": "coa-camping-shared-rest",
   "contract": [
+    "Use CoACamping.AllowSoloContributions=0 and CoACamping.Capacity=3 for this shared-camp scenario.",
     "Requires CoACamping.Enable=1 and default 900-second lifetime, 60-second rest, 3600-second benefit.",
     "A native spell-818 fire receives supplies; another Herbalism-20 player spends one of each mapped herb.",
     "Two seated players gain exactly 2 Intellect, no Spirit, from a campsite-owned visible aura after 60 seconds.",

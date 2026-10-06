@@ -2,7 +2,7 @@
   "schema": 1,
   "name": "coa-camping-furniture",
   "contract": [
-    "Default camping config: three slots, one contribution per character per hour, 60-second seated rest.",
+    "Shared camping config: AllowSoloContributions=0, Capacity=3, one-hour contribution limit and 60-second rest.",
     "Incense, a working native chair and an Alliance banner coexist; every profession pays its captured materials.",
     "Chair rest grants exactly 2% melee, ranged and spell crit. Banner Spirit is 14/19/27/32 at the captured levels.",
     "The opposite faction receives no banner Spirit. Divine Spirit and Moonkin Aura win in either application order.",

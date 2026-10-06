@@ -2,6 +2,7 @@
   "schema": 1,
   "name": "coa-camping-class-buffs",
   "contract": [
+    "Use CoACamping.AllowSoloContributions=0 and CoACamping.Capacity=3 for this shared-camp scenario.",
     "Requires CoACamping.Enable=1, 60-second rest and 3600-second camping benefit.",
     "An existing class Arcane Intellect keeps its mage caster and loses only elapsed duration during rest.",
     "A class cast after camping replaces the camping-owned proxy and establishes normal class ownership/duration.",

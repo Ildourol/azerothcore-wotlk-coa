@@ -2,6 +2,7 @@
   "schema": 1,
   "name": "coa-camping-services",
   "contract": [
+    "Requires enabled camping with CoACamping.AllowSoloContributions=0 and CoACamping.Capacity=3.",
     "Engineering 20 places a reagent vendor; Engineering 140 directly places a vendor with paid native repair.",
     "A camp has one service slot: an existing reagent bot cannot be upgraded or replaced by a repair bot.",
     "Rejected profession ranks and duplicate families consume no materials or shared contribution cooldown.",

@@ -30,6 +30,7 @@ struct ContributionCheck
     bool HasMaterials = true;
     bool OnCooldown = false;
     bool AlreadyContributed = false;
+    bool AllowSoloContributions = false;
     bool FeaturePresent = false;
     std::uint32_t UsedSlots = 0;
     std::uint32_t Capacity = 3;
@@ -49,9 +50,9 @@ inline ContributionFailure CheckContribution(ContributionCheck const& check)
         return ContributionFailure::Skill;
     if (!check.HasMaterials)
         return ContributionFailure::Materials;
-    if (check.OnCooldown)
+    if (!check.AllowSoloContributions && check.OnCooldown)
         return ContributionFailure::Cooldown;
-    if (check.AlreadyContributed)
+    if (!check.AllowSoloContributions && check.AlreadyContributed)
         return ContributionFailure::AlreadyContributed;
     if (check.UsedSlots >= check.Capacity)
         return ContributionFailure::Full;

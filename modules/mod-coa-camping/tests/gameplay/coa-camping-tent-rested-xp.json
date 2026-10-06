@@ -2,6 +2,7 @@
   "schema": 1,
   "name": "coa-camping-tent-rested-xp",
   "contract": [
+    "Requires enabled camping with CoACamping.AllowSoloContributions=0 and CoACamping.Capacity=3.",
     "A Leatherworking-20 tent costs five Light Leather; a rejected rank-19 request consumes nothing.",
     "Thirty uninterrupted seated seconds raises rested XP to 5% of next-level XP, without reducing a larger pool.",
     "A higher-pool no-op consumes no tent lockout. Tent and contribution deadlines are separate and survive relog.",

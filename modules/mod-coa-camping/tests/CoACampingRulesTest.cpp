@@ -81,6 +81,32 @@ TEST(CoACamping, ContributionCooldownEndsAtItsPersistedDeadline)
     EXPECT_TRUE(CooldownActive(0x100000001ULL, 0xFFFFFFFFULL));
 }
 
+TEST(CoACamping, SoloContributionsBypassSharedLimitsAndKeepPlacementChecks)
+{
+    ContributionCheck check;
+    check.OnCooldown = CooldownActive(4600, 1000);
+    check.AlreadyContributed = true;
+    EXPECT_EQ(CheckContribution(check), ContributionFailure::Cooldown);
+    check.AllowSoloContributions = true;
+    EXPECT_EQ(CheckContribution(check), ContributionFailure::None);
+    check.FeaturePresent = true;
+    EXPECT_EQ(CheckContribution(check), ContributionFailure::FeaturePresent);
+    check.UsedSlots = 5;
+    check.Capacity = 5;
+    EXPECT_EQ(CheckContribution(check), ContributionFailure::Full);
+    check.HasMaterials = false;
+    EXPECT_EQ(CheckContribution(check), ContributionFailure::Materials);
+    check.HasSkill = false;
+    EXPECT_EQ(CheckContribution(check), ContributionFailure::Skill);
+    check.AllowSoloContributions = false;
+    check.HasMaterials = true;
+    check.HasSkill = true;
+    check.UsedSlots = 0;
+    check.FeaturePresent = false;
+    check.OnCooldown = false;
+    EXPECT_EQ(CheckContribution(check), ContributionFailure::AlreadyContributed);
+}
+
 TEST(CoACamping, BannerUsesCapturedLevelBands)
 {
     EXPECT_EQ(BannerSpirit(1), 14);

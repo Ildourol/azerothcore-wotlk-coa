@@ -23,7 +23,8 @@ displays, materials, skills and invalid configuration. Settings are immutable un
 1. Cast Basic Campfire (818) on allowed outdoor terrain while alive and out of combat. The default map
    allowlist is 0, 1, 530 and 571. Flight, transport, vehicles and underwater placement are excluded.
 2. Click the nearby **Campsite Supplies** alchemy set and select a contribution. The menu lists the required
-   profession rank and materials. A camp holds three features, with one contribution per character per hour.
+   profession rank and materials. A camp holds five features by default. Solo contributions are enabled by
+   default, so one character can place every feature family without a shared contribution cooldown.
 3. Sit within 20 yards of the fire for 60 uninterrupted seconds to receive its available stat benefits for
    one hour. Clicking the chair seats the player through the normal chair handler. Standing idle does not count.
 4. With a tent present, 30 seated seconds replenishes rested XP to 5% of the XP needed for the next level.
@@ -51,11 +52,15 @@ A completed rest grants once; stand and sit again to begin another rest. A compl
 camping-owned reward, including one retained after relog.
 
 Contribution requests are committed on the map update lane and rechecked after opening gossip. Skill,
-carried materials, range, line of sight, phase, capacity, expiry and the shared character cooldown must still
-be valid. Rejected requests or failed prop creation consume nothing. Successful contribution saves inventory
-and cooldown in one character-database transaction. The cooldown defaults to one hour across every camp and
-survives relog/restart. Tent pool changes and their deadline are saved together through the native character
-save transaction. Max-level players receive no tent reward or lockout. The `core.coa.camping` setting is mandatory
+carried materials, range, line of sight, phase, capacity and expiry must still be valid. Rejected requests or
+failed prop creation consume nothing. Successful contribution saves inventory and, when restricted, its
+cooldown in one character-database transaction. Set `CoACamping.AllowSoloContributions=0` to enforce one
+contribution per character per camp and the shared cooldown, which defaults to one hour across every camp and
+survives relog/restart. Solo mode ignores existing contribution deadlines and preserves them without starting
+new ones. Profession ranks, material costs, capacity and duplicate-family checks still apply. Set
+`CoACamping.Capacity=3` to restore the original shared camp size. Tent pool changes and their deadline are saved
+together through the native character save transaction. Max-level players receive no tent reward or lockout.
+The `core.coa.camping` setting is mandatory
 gameplay state even when optional player preferences are disabled; no new character table is needed.
 
 Managed fires last fifteen minutes by default, together with their supplies, reward helper, linked trap and
@@ -107,15 +112,22 @@ client patch and does not replace any existing DBCs. Native scenarios exercise s
 Reconfigure the build, then use the repository's verification command:
 
 Windows runs require the linked MySQL and OpenSSL DLLs and OpenSSL's `legacy.dll` beside the build
-executables. Run the two configuration profiles sequentially because the default reusable world cache is
+executables. Run configuration profiles sequentially because the default reusable world cache is
 leased by one verification batch at a time.
 
 ```sh
 python -B tools/verify_all.py --base HEAD --stages source,build,unit --query camping
-python -B tools/verify_all.py --stages gameplay --query camping --settings path/to/camping-verify.json
+python -B tools/verify_all.py --stages gameplay --scenario coa-camping-solo-contributions \
+  --settings path/to/camping-solo-verify.json
+python -B tools/verify_all.py --stages gameplay --settings path/to/camping-verify.json \
+  --scenario coa-camping-class-buffs coa-camping-contribution-revalidation coa-camping-furniture \
+  coa-camping-rest-interruption coa-camping-services coa-camping-shared-rest coa-camping-tent-rested-xp
 ```
 
-Gameplay settings must select module configurations with `CoACamping.Enable=1`. The scenarios keep native
+Gameplay settings must select module configurations with `CoACamping.Enable=1`. The solo profile exercises
+the defaults, `CoACamping.AllowSoloContributions=1` and `CoACamping.Capacity=5`. The shared profile requires
+`CoACamping.AllowSoloContributions=0` and `CoACamping.Capacity=3`; the expiry profile also uses these shared
+limits. One configuration cannot satisfy both contribution modes. The scenarios keep native
 spell costs/cooldowns and gossip handlers, and cover shared contribution, revalidation, persistent cooldown,
 rest interruption, class-buff ownership in both orders, faction filtering, native seating, rested XP consumption,
 paid purchases/repairs, fire identification and cleanup. Unit tests cover

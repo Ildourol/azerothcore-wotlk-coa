@@ -2,6 +2,7 @@
   "schema": 1,
   "name": "coa-camping-contribution-revalidation",
   "contract": [
+    "Use CoACamping.AllowSoloContributions=0 and CoACamping.Capacity=3 for this shared-camp scenario.",
     "Requires CoACamping.Enable=1 and the default shared 3600-second contribution cooldown.",
     "Skill and missing-material failures consume nothing. Two stale menus cannot commit duplicate candles.",
     "The losing contributor retains materials and cooldown. The winning deadline survives native relog.",

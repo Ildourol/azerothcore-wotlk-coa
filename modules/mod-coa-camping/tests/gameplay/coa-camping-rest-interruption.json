@@ -2,6 +2,7 @@
   "schema": 1,
   "name": "coa-camping-rest-interruption",
   "contract": [
+    "Use CoACamping.AllowSoloContributions=0 and CoACamping.Capacity=3 for this shared-camp scenario.",
     "Requires CoACamping.Enable=1 and 60-second rest. The scenario uses normal phase 1 and runs exclusively.",
     "Standing, a brief movement flag between scan intervals, and leaving the camp phase each reset rest.",
     "Returning to the original phase requires a new full 60-second seated interval before receiving 2 Intellect."

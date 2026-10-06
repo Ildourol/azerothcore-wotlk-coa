@@ -40,6 +40,7 @@ using namespace CoACamping;
 struct CampingSettings
 {
     bool Enabled = false;
+    bool AllowSoloContributions = true;
     std::set<uint32> AllowedMaps;
     std::set<uint32> AllowedAreas;
     uint32 LifetimeSeconds = 900;
@@ -50,7 +51,7 @@ struct CampingSettings
     uint32 BenefitSeconds = 3600;
     uint32 ContributionCooldownSeconds = 3600;
     uint32 ScanMilliseconds = 1000;
-    uint32 Capacity = 3;
+    uint32 Capacity = 5;
     float BenefitRadius = 20.0f;
     float ContributionDistance = 5.0f;
     float MinimumSpacing = 40.0f;
@@ -408,6 +409,7 @@ void Contribute(Map* map, ContributionRequest const& request)
     });
     check.OnCooldown = CooldownActive(ReadSettingPair(player, 0), NowSeconds());
     check.AlreadyContributed = camp->Contributors.count(player->GetGUID());
+    check.AllowSoloContributions = Settings.AllowSoloContributions;
     check.FeaturePresent = std::any_of(camp->Attachments.begin(), camp->Attachments.end(),
         [feature](Attachment const& attachment) { return Family(attachment.Kind) == Family(feature->Kind); });
     check.UsedSlots = uint32(camp->Attachments.size());
@@ -450,14 +452,19 @@ void Contribute(Map* map, ContributionRequest const& request)
     for (Material material : feature->Materials)
         if (material.Count)
             player->DestroyItemCount(material.Item, material.Count, true);
-    WriteSettingPair(player, 0, NowSeconds() + Settings.ContributionCooldownSeconds);
+    if (!Settings.AllowSoloContributions)
+        WriteSettingPair(player, 0, NowSeconds() + Settings.ContributionCooldownSeconds);
     CharacterDatabaseTransaction transaction = CharacterDatabase.BeginTransaction();
     player->SaveInventoryAndGoldToDB(transaction);
-    transaction->Append(PlayerSettingsStore::PrepareReplaceStatement(player->GetGUID().GetCounter(),
-        CooldownSettings, *player->FindPlayerSettings(CooldownSettings)));
+    if (!Settings.AllowSoloContributions)
+        transaction->Append(PlayerSettingsStore::PrepareReplaceStatement(player->GetGUID().GetCounter(),
+            CooldownSettings, *player->FindPlayerSettings(CooldownSettings)));
     CharacterDatabase.CommitTransaction(transaction);
-    ChatHandler(player->GetSession()).PSendSysMessage("{} placed. The shared camping cooldown has started.",
-        feature->Name);
+    if (Settings.AllowSoloContributions)
+        ChatHandler(player->GetSession()).PSendSysMessage("{} placed.", feature->Name);
+    else
+        ChatHandler(player->GetSession()).PSendSysMessage("{} placed. The shared camping cooldown has started.",
+            feature->Name);
 }
 
 template<std::size_t Size>
@@ -721,6 +728,7 @@ public:
         Settings.Enabled = sConfigMgr->GetOption<bool>("CoACamping.Enable", false);
         if (!Settings.Enabled)
             return;
+        Settings.AllowSoloContributions = sConfigMgr->GetOption<bool>("CoACamping.AllowSoloContributions", true);
         Settings.AllowedMaps = ReadAllowlist("CoACamping.AllowedMaps", "0,1,530,571");
         Settings.AllowedAreas = ReadAllowlist("CoACamping.AllowedAreas", "");
         Settings.LifetimeSeconds = sConfigMgr->GetOption<uint32>("CoACamping.LifetimeSeconds", 900);
@@ -732,7 +740,7 @@ public:
         Settings.ContributionCooldownSeconds =
             sConfigMgr->GetOption<uint32>("CoACamping.ContributionCooldownSeconds", 3600);
         Settings.ScanMilliseconds = sConfigMgr->GetOption<uint32>("CoACamping.ScanMilliseconds", 1000);
-        Settings.Capacity = sConfigMgr->GetOption<uint32>("CoACamping.Capacity", 3);
+        Settings.Capacity = sConfigMgr->GetOption<uint32>("CoACamping.Capacity", 5);
         Settings.BenefitRadius = sConfigMgr->GetOption<float>("CoACamping.BenefitRadius", 20.0f);
         Settings.ContributionDistance = sConfigMgr->GetOption<float>("CoACamping.ContributionDistance", 5.0f);
         Settings.MinimumSpacing = sConfigMgr->GetOption<float>("CoACamping.MinimumSpacing", 40.0f);
@@ -824,8 +832,9 @@ public:
         RequireMapping(crit && crit->Effects[EFFECT_0].Effect == SPELL_EFFECT_APPLY_AURA &&
             crit->Effects[EFFECT_0].ApplyAuraName == SPELL_AURA_MOD_CRIT_PCT, "all-crit aura");
         LOG_INFO("server.loading", "CoA Camping enabled: tents, chairs, faction banners, incense and service bots; "
-            "{} second camps, {} second rests, {} second tent rests.",
-            Settings.LifetimeSeconds, Settings.RestSeconds, Settings.TentRestSeconds);
+            "{} second camps, {} second rests, {} second tent rests; solo contributions {}, {} feature slots.",
+            Settings.LifetimeSeconds, Settings.RestSeconds, Settings.TentRestSeconds,
+            Settings.AllowSoloContributions, Settings.Capacity);
     }
 };
 
@@ -868,7 +877,7 @@ public:
         for (FeatureDefinition const& feature : Features)
             AddGossipItemFor(player, GOSSIP_ICON_CHAT, feature.Menu, GOSSIP_SENDER_MAIN, uint32(feature.Kind));
         uint64 const expires = ReadSettingPair(player, 0);
-        if (CooldownActive(expires, NowSeconds()))
+        if (!Settings.AllowSoloContributions && CooldownActive(expires, NowSeconds()))
             ChatHandler(player->GetSession()).PSendSysMessage("Camping contribution available in {} seconds.",
                 expires - NowSeconds());
         SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, object->GetGUID());

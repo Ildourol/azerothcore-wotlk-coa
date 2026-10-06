@@ -2,6 +2,7 @@
   "schema": 1,
   "name": "coa-camping-expiry",
   "contract": [
+    "Use CoACamping.AllowSoloContributions=0 and CoACamping.Capacity=3 for this shared-camp scenario.",
     "Requires CoACamping.Enable=1, CoACamping.LifetimeSeconds=120 and CoACamping.RestSeconds=60.",
     "A same-model fixture fire without spell 818 stays unmanaged at its native 300-second lifetime.",
     "At the configured managed deadline the fire, supplies and contributed candle expire together.",
