@@ -15,6 +15,16 @@ import run
 
 
 class RunnerTests(unittest.TestCase):
+    def test_shared_gameobject_use_requires_a_player_owner(self):
+        scenario = copy.deepcopy(self.scenario)
+        step = {'action': 'use_gameobject', 'actor': 'caster', 'entry': 9500200, 'owner': 'caster'}
+        scenario['steps'].append(step)
+        self.assertIs(run.validate(scenario), scenario)
+        for owner in ('target', 'absent', None, 1):
+            step['owner'] = owner
+            with self.subTest(owner=owner), self.assertRaises(ValueError):
+                run.validate(scenario)
+
     def test_spell_family_flags_require_a_spell_and_valid_word(self):
         for word in (0, 1, 2):
             scenario = copy.deepcopy(self.scenario)

@@ -4337,7 +4337,9 @@ private:
         }
         else if (action == "use_gameobject")
         {
-            std::list<GameObject*> objects = OwnedGameObjects(player, step.get<uint32>("entry"));
+            Player* owner = step.get_optional<std::string>("owner") ?
+                GetPlayer(step.get<std::string>("owner")) : player;
+            std::list<GameObject*> objects = OwnedGameObjects(owner, step.get<uint32>("entry"));
             Require(objects.size() == 1, "Gameobject use needs exactly one owned object");
             WorldPacket packet(CMSG_GAMEOBJ_USE, 8);
             packet << objects.front()->GetGUID();
