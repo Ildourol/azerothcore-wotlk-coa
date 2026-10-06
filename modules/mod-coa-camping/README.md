@@ -9,9 +9,9 @@ its core-side additions are native gameplay test actions and measurements.
 The normal `MODULES=static` build discovers this directory and `Addmod_coa_campingScripts`. Reconfigure CMake
 after adding it. Set `-DMODULE_MOD-COA-CAMPING=disabled` to exclude the entire module, including its unit tests.
 
-The three pending camping migrations add supplies, furniture and service templates and adjust their scale.
+The four pending camping migrations add supplies, furniture and service templates and adjust their scale.
 Let the normal updater apply them to the chosen deployment. Reserved template collisions are preserved;
-enabled startup rejects incompatible mappings. The already applied first two migrations stay unchanged.
+enabled startup rejects incompatible mappings. The already applied migrations stay unchanged.
 No existing fire, spell or Ranger template is changed.
 
 Copy `conf/mod-coa-camping.conf.dist` to the server's module configuration directory without `.dist`, set
@@ -86,7 +86,7 @@ Completed rewards retain their own one-hour lifetime after the camp is gone.
 | Candle | New object 9500201, stock candle display 100 |
 | Tent | New object 9500202, human-tent display 7194, scale 1 |
 | Chair | New object 9500203, wooden-chair display 39, native single medium-height seat |
-| Banners | New objects 9500204/9500205, Alliance/Horde displays 5771/5773, scale 0.35 |
+| Banners | New objects 9500204/9500205, Alliance/Horde displays 5771/5773, scale 1 |
 | Services | New creatures 9500220/9500221, repair-bot display 14379, neutral faction 190 |
 | Rewards | Effect 0 only: 1459 Intellect, 14752 Spirit, CoA's 34833 all-crit aura |
 | Contribution | Herbalism 182, base rank 20; items 2447 and 765, one each |
