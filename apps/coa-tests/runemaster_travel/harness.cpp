@@ -195,6 +195,7 @@ struct Player : Unit
     Position teleportDestination, damageDestination, collisionDestination{30, 0, 0, 0};
     std::map<uint32, int> spells;
     std::map<uint32, uint32> m_temporarySpellReplacements;
+    std::map<uint32, uint32> m_temporarySpellReplacementOrigins;
     std::vector<std::unique_ptr<TempSummon>> creatures;
     Session session;
     Player* ToPlayer() override { return this; }
@@ -223,6 +224,7 @@ struct Player : Unit
     void SetTemporarySpellReplacement(uint32 original, uint32 replacement, bool announce = true);
     uint32 GetTemporarySpellReplacement(uint32 original) const;
     Session* GetSession() { return &session; }
+    void SendLearnPacket(uint32, bool, bool = false) { }
     std::map<uint8, ActionButton> buttons;
     uint32 barSends = 0;
     ActionButton const* GetActionButton(uint8 slot) const
@@ -276,6 +278,12 @@ struct Player : Unit
         damageDestination = {x, y, z, 0};
     }
 };
+struct ScriptMgr
+{
+    void OnPlayerTemporarySpellRemoveNotice(Player*, uint32, bool) { }
+    void OnPlayerTemporarySpellReplacementNotice(Player*, uint32, uint32, bool) { }
+} scripts;
+auto sScriptMgr = &scripts;
 // NATIVE_REPLACEMENTS
 struct SpellMgr
 {
