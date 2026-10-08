@@ -16,6 +16,7 @@
  */
 
 #include "AccountMgr.h"
+#include "../coa/AscensionRunemasterTalents.h"
 #include "BattlefieldMgr.h"
 #include "RBAC.h"
 #include "Battleground.h"
@@ -1039,7 +1040,12 @@ void WorldSession::HandleSetActionButtonOpcode(WorldPacket& recv_data)
                     type, action, button, _player->GetName(), _player->GetGUID().ToString());
                 return;
         }
+        uint32 previous = 0;
+        if (ActionButton const* current = GetPlayer()->GetActionButton(button))
+            previous = current->GetAction();
         GetPlayer()->addActionButton(button, action, type);
+        if (type == ACTION_BUTTON_SPELL)
+            AscensionRunemasterTravelDropButtonCopies(GetPlayer(), button, action, previous);
     }
 }
 

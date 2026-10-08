@@ -13950,7 +13950,7 @@ bool Player::CanTitanGrip(ItemTemplate const* weapon) const
         (weapon->SubClass != ITEM_SUBCLASS_WEAPON_POLEARM || commander));
 }
 
-void Player::SetTemporarySpellReplacement(uint32 original, uint32 replacement)
+void Player::SetTemporarySpellReplacement(uint32 original, uint32 replacement, bool announce)
 {
     auto itr = m_temporarySpellReplacements.find(original);
     uint32 previous = itr == m_temporarySpellReplacements.end() ? original : itr->second;
@@ -13970,7 +13970,7 @@ void Player::SetTemporarySpellReplacement(uint32 original, uint32 replacement)
             return;
         m_temporarySpellReplacements[original] = replacement;
     }
-    if (previous != replacement && IsInWorld() && HasActiveSpell(original))
+    if (announce && previous != replacement && IsInWorld() && HasActiveSpell(original))
     {
         if (sharedReplacement)
             SendLearnPacket(replacement, false);

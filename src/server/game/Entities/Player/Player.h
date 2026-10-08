@@ -1820,7 +1820,7 @@ public:
     [[nodiscard]] PlayerSpellMap const& GetSpellMap() const { return m_spells; }
     PlayerSpellMap&       GetSpellMap()       { return m_spells; }
     // Transient action replacements; never written to character spell ownership.
-    void SetTemporarySpellReplacement(uint32 original, uint32 replacement);
+    void SetTemporarySpellReplacement(uint32 original, uint32 replacement, bool announce = true);
     [[nodiscard]] uint32 GetTemporarySpellReplacement(uint32 original) const;
     [[nodiscard]] bool CanUseTwoHandWithShield(ItemTemplate const* main, ItemTemplate const* off) const;
     [[nodiscard]] float GetMeleeAbilityRangeBonus() const;
