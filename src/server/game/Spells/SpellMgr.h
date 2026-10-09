@@ -790,6 +790,15 @@ public:
     void UnloadSpellInfoChains();
     void LoadSpellTalentRanks();
     void LoadSpellRanks();
+    /// rank chains a module adds after `spell_ranks`; a chain touching an already ranked spell is skipped
+    using AddedSpellRanks = std::vector<std::vector<uint32>> (*)();
+    void SetAddedSpellRanks(AddedSpellRanks ranks) { _addedSpellRanks = ranks; }
+    void LoadAddedSpellRanks();
+    /// (source, twin) spell pairs a module adds; a twin without its own database row takes its source's
+    using SpellTwins = std::vector<std::pair<uint32, uint32>> (*)();
+    void SetSpellTwins(SpellTwins twins) { _spellTwinSource = twins; }
+    void LoadSpellTwins();
+    [[nodiscard]] std::unordered_map<uint32, uint32> const& GetSpellTwins() const { return _spellTwins; }
     void LoadSpellRequired();
     void LoadSpellLearnSkills();
     void LoadSpellTargetPositions();
@@ -820,6 +829,12 @@ public:
     void LoadSpellJumpDistances();
 
 private:
+    template <class Store>
+    void CopyToSpellTwins(Store& store);
+
+    AddedSpellRanks            _addedSpellRanks = nullptr;
+    SpellTwins                 _spellTwinSource = nullptr;
+    std::unordered_map<uint32, uint32> _spellTwins;
     SpellDifficultySearcherMap mSpellDifficultySearcherMap;
     SpellChainMap              mSpellChains;
     SpellsRequiringSpellMap    mSpellsReqSpell;

@@ -5,7 +5,7 @@
 #include "KillRewarder.h"
 #include "Random.h"
 #include "AllCreatureScript.h"
-
+#include "LocalLevelScaling.h"
 
 using namespace Acore::ChatCommands;
 
@@ -555,12 +555,15 @@ namespace CoAChallenges
         add("CHALLENGE_RULES_TYPE_CAST_RANGE_LIMITED_TO_MELEE", REGEN_CAST_RANGE);
         add("CHALLENGE_RULES_TYPE_NO_PORTALS", REGEN_NO_PORTALS);
 
-        std::lock_guard<std::mutex> lock(RegenMutex);
-        uint32 guid = player->GetGUID().GetCounter();
-        if (mask)
-            RegenRuleMask[guid] = mask;
-        else
-            RegenRuleMask.erase(guid);
+        {
+            std::lock_guard<std::mutex> lock(RegenMutex);
+            uint32 guid = player->GetGUID().GetCounter();
+            if (mask)
+                RegenRuleMask[guid] = mask;
+            else
+                RegenRuleMask.erase(guid);
+        }
+        player->UpdateManaRegen();
     }
 
     void UntrackRegen(Player* player)
@@ -746,6 +749,69 @@ namespace CoAChallenges
     {
         std::lock_guard<std::mutex> lock(HighRiskMutex);
         return HighRiskGuids.find(guid) != HighRiskGuids.end();
+    }
+
+    // ---- NO_CREATURE_LEVEL_SCALING / NO_QUEST_LEVEL_SCALING -----------------
+    // The scaling paths ask once per creature per viewer update, so the mask is
+    // cached per guid like the High Risk set, with a count for the common case
+    // of nobody holding such a challenge. A change re-sends the character's
+    // creatures and quest log, which the client otherwise keeps from before.
+    std::mutex LevelScalingMutex;
+    std::unordered_map<uint32, uint8> LevelScalingMasks;
+    std::atomic<uint32> LevelScalingMaskCount{0};
+
+    uint8 LevelScalingBlocks(Player const* player)
+    {
+        if (!player || !LevelScalingMaskCount.load(std::memory_order_relaxed))
+            return 0;
+        std::lock_guard<std::mutex> lock(LevelScalingMutex);
+        auto const it = LevelScalingMasks.find(player->GetGUID().GetCounter());
+        return it == LevelScalingMasks.end() ? 0 : it->second;
+    }
+
+    uint8 StoreLevelScalingBlocks(uint32 guid, uint8 blocks)
+    {
+        std::lock_guard<std::mutex> lock(LevelScalingMutex);
+        auto const it = LevelScalingMasks.find(guid);
+        uint8 const previous = it == LevelScalingMasks.end() ? 0 : it->second;
+        if (it != LevelScalingMasks.end() && !blocks)
+        {
+            LevelScalingMasks.erase(it);
+            LevelScalingMaskCount.fetch_sub(1, std::memory_order_relaxed);
+        }
+        else if (it != LevelScalingMasks.end())
+            it->second = blocks;
+        else if (blocks)
+        {
+            LevelScalingMasks.emplace(guid, blocks);
+            LevelScalingMaskCount.fetch_add(1, std::memory_order_relaxed);
+        }
+        return previous;
+    }
+
+    void RefreshLevelScalingTracking(Player* player)
+    {
+        if (!player)
+            return;
+        uint8 blocks = 0;
+        if (ChallengesEnabled())
+        {
+            uint32 level = 0;
+            if (ActiveChallengeWithRule(player, "CHALLENGE_RULES_TYPE_NO_CREATURE_LEVEL_SCALING", level))
+                blocks |= LocalLevelScaling::ChallengeBlocksCreatureScaling;
+            if (ActiveChallengeWithRule(player, "CHALLENGE_RULES_TYPE_NO_QUEST_LEVEL_SCALING", level))
+                blocks |= LocalLevelScaling::ChallengeBlocksQuestScaling;
+        }
+        if (StoreLevelScalingBlocks(player->GetGUID().GetCounter(), blocks) == blocks || !player->IsInWorld())
+            return;
+        if (!LocalLevelScaling::NotifyScalingChanged(player))
+            player->RefreshQuestLogQueries();
+    }
+
+    void UntrackLevelScaling(Player* player)
+    {
+        if (player)
+            StoreLevelScalingBlocks(player->GetGUID().GetCounter(), 0);
     }
 
     // HIGH_RISK_ONLY activation gate (shared by ValidateChallenge and tests).
@@ -2221,6 +2287,7 @@ namespace CoAChallenges
             UntrackRegen(player);
             UntrackLevelUp(player);
             UntrackHighRisk(player);
+            UntrackLevelScaling(player);
             UntrackLootedItems(player->GetGUID().GetCounter());
             UntrackBandage(player);
             UntrackOutsideInteraction(player->GetGUID().GetCounter());
@@ -3818,6 +3885,7 @@ namespace CoAChallenges
 void Addmod_coa_challengesScripts()
 {
     RegisterAscensionClientConfig(&CoAChallenges::AppendClientConfig);
+    LocalLevelScaling::ChallengeBlocksOwner.store(&CoAChallenges::LevelScalingBlocks, std::memory_order_relaxed);
     new CoAChallenges::CoAChallengesPlayer();
     new CoAChallenges::CoAChallengesWorld();
     new CoAChallenges::CoAChallengesServer();
@@ -3830,4 +3898,3 @@ void Addmod_coa_challengesScripts()
     new CoAChallenges::CoAChallengesSpells();
     new CoAChallenges::CoAChallengesAllCreature();
 }
-

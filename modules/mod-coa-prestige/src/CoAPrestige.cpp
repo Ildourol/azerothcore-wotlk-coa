@@ -31,6 +31,7 @@
 #include "GameEventMgr.h"
 #include "GlobalScript.h"
 #include "Item.h"
+#include "LFGMgr.h"
 #include "Log.h"
 #include "Mail.h"
 #include "Map.h"
@@ -513,6 +514,7 @@ namespace
 
         RememberActionBar(player);
         DismissPets(player);
+        sLFGMgr->LeaveLfg(player->GetGUID());
         ResetQuests(player, requiredLevel);
 
         uint32 const talents = wildcard ? AscensionWildcard::PrestigeSpecialization(player) :
@@ -579,12 +581,26 @@ namespace
             return;
 
         state.active = false;
+        if (player->GetLevel() < 10 && !AscensionWildcard::IsWildcardHero(player))
+            state.signaturePending = true;
         SaveState(player, state);
         player->RemoveAurasDueToSpell(PrestigedAura);
         SyncDailyAuras(player);
         SendPrestigeLevels(player);
         ChatHandler(player->GetSession()).PSendSysMessage(
             "Prestige {} complete: your specialization is unlocked.", state.level);
+    }
+
+    void RestoreSpecializationSignature(Player* player)
+    {
+        State state = LoadState(player);
+        if ((state.active || state.signaturePending) && !AscensionWildcard::IsWildcardHero(player) &&
+            state.specialization == GetAscensionActiveSpecialization(player) &&
+            RestoreAscensionSpecializationSignature(player) && state.signaturePending)
+        {
+            state.signaturePending = false;
+            SaveState(player, state);
+        }
     }
 
     std::string SpecializationSwitchRefusal(Player* player, uint32 /*active*/, uint32 requested)
@@ -676,7 +692,10 @@ public:
             player->m_Events.AddEventAtOffset([guid = player->GetGUID()]
             {
                 if (Player* player = ObjectAccessor::FindPlayer(guid))
+                {
+                    RestoreSpecializationSignature(player);
                     SendPrestigeLevels(player);
+                }
             }, 1s);
     }
 
@@ -705,6 +724,8 @@ public:
         if (!g_enabled)
             return;
 
+        RestoreSpecializationSignature(player);
+
         // "Max Level Reached" daily objective: credited at the required level. The
         // daily still keeps its content objective until that is met too.
         if (player->GetLevel() >= g_requiredLevel)
@@ -715,8 +736,10 @@ public:
 
     void OnPlayerCompleteQuest(Player* player, Quest const* quest) override
     {
-        // "Daily Quests Completed" objective: any daily quest turned in counts.
-        if (quest && quest->IsDaily())
+        // "World Quests Completed" objective: any quest turned in outside instances and
+        // battlegrounds counts, except the Prestige dailies themselves.
+        if (quest && !IsPrestigeDaily(quest->GetQuestId()) && player->GetMap()
+            && !player->GetMap()->Instanceable() && !player->InBattleground())
             player->KilledMonsterCredit(DailyCreditWorldQuests);
 
         // A turned-in daily leaves the quest panel, so its aura goes with it.

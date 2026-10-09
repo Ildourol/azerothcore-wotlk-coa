@@ -347,7 +347,7 @@ class spell_warl_generic_scaling : public AuraScript
                 amount = CalculatePct(std::max<int32>(0, maximum), 57);
 
                 // Glyph of felguard, 99% sure this is a HACK
-                if (pet->GetEntry() == NPC_FELGUARD)
+                if (GetStockPetEntry(pet->GetEntry()) == NPC_FELGUARD)
                 {
                     if (AuraEffect* glyph = owner->GetAuraEffect(SPELL_GLYPH_OF_FELGUARD, EFFECT_0))
                     {
@@ -829,7 +829,9 @@ class spell_warl_life_tap : public SpellScript
         if (Unit* target = GetHitUnit())
         {
             int32 spellEffect = GetEffectValue();
-            int32 mana = int32(spellEffect + (caster->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_SHADOW) * 0.5f));
+            SpellBonusEntry const* bonus = sSpellMgr->GetSpellBonusData(GetSpellInfo()->Id);
+            float const coefficient = bonus ? bonus->direct_damage : 0.5f;
+            int32 mana = int32(spellEffect + (caster->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_SHADOW) * coefficient));
 
             // Shouldn't Appear in Combat Log
             target->ModifyHealth(-spellEffect);

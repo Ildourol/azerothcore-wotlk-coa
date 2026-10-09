@@ -1420,6 +1420,67 @@ void SpellMgr::LoadSpellRanks()
     LOG_INFO("server.loading", " ");
 }
 
+void SpellMgr::LoadAddedSpellRanks()
+{
+    if (!_addedSpellRanks)
+        return;
+
+    uint32 count = 0;
+    for (std::vector<uint32> const& chain : _addedSpellRanks())
+    {
+        if (chain.size() < 2 || std::any_of(chain.begin(), chain.end(), [this](uint32 spellId)
+            {
+                SpellInfo const* spellInfo = GetSpellInfo(spellId);
+                return !spellInfo || spellInfo->ChainEntry;
+            }))
+            continue;
+
+        for (std::size_t rank = 0; rank < chain.size(); ++rank)
+        {
+            SpellChainNode& node = mSpellChains[chain[rank]];
+            node.first = GetSpellInfo(chain.front());
+            node.last = GetSpellInfo(chain.back());
+            node.rank = uint8(rank + 1);
+            node.prev = rank ? GetSpellInfo(chain[rank - 1]) : nullptr;
+            node.next = rank + 1 < chain.size() ? GetSpellInfo(chain[rank + 1]) : nullptr;
+            mSpellInfoMap[chain[rank]]->ChainEntry = &node;
+        }
+        count += chain.size();
+    }
+
+    LOG_INFO("server.loading", ">> Loaded {} added spell rank records", count);
+    LOG_INFO("server.loading", " ");
+}
+
+template <class Store>
+void SpellMgr::CopyToSpellTwins(Store& store)
+{
+    for (auto const& [source, twin] : _spellTwins)
+    {
+        if (store.contains(twin))
+            continue;
+        auto const itr = store.find(source);
+        if (itr == store.end())
+            continue;
+        typename Store::mapped_type value = itr->second;
+        store.emplace(twin, std::move(value));
+    }
+}
+
+void SpellMgr::LoadSpellTwins()
+{
+    _spellTwins.clear();
+    if (_spellTwinSource)
+        for (auto const& [source, twin] : _spellTwinSource())
+            if (GetSpellInfo(source) && GetSpellInfo(twin))
+                _spellTwins.emplace(source, twin);
+
+    CopyToSpellTwins(mSpellCooldownOverrideMap);
+
+    LOG_INFO("server.loading", ">> Loaded {} spell twins", _spellTwins.size());
+    LOG_INFO("server.loading", " ");
+}
+
 void SpellMgr::LoadSpellRequired()
 {
     uint32 oldMSTime = getMSTime();
@@ -1480,6 +1541,24 @@ void SpellMgr::LoadSpellRequired()
         if (GetTalentSpellCost(spellReq) > 0)
             mTalentSpellAdditionalSet.insert(spellId);
     } while (result->NextRow());
+
+    std::vector<std::pair<uint32, uint32>> twinRequirements;
+    for (auto const& [spellId, spellReq] : mSpellReq)
+    {
+        auto const twin = _spellTwins.find(spellId);
+        if (twin == _spellTwins.end() || mSpellReq.contains(twin->second))
+            continue;
+        auto const reqTwin = _spellTwins.find(spellReq);
+        twinRequirements.emplace_back(twin->second, reqTwin != _spellTwins.end() ? reqTwin->second : spellReq);
+    }
+    for (auto const& [spellId, spellReq] : twinRequirements)
+    {
+        mSpellReq.emplace(spellId, spellReq);
+        mSpellsReqSpell.emplace(spellReq, spellId);
+        if (GetTalentSpellCost(spellReq) > 0)
+            mTalentSpellAdditionalSet.insert(spellId);
+        ++count;
+    }
 
     LOG_INFO("server.loading", ">> Loaded {} Spell Required Records in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
@@ -1604,6 +1683,16 @@ void SpellMgr::LoadSpellTargetPositions()
         }
     } while (result->NextRow());
 
+    for (auto const& [source, twin] : _spellTwins)
+    {
+        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        {
+            auto const itr = mSpellTargetPositions.find({ source, SpellEffIndex(i) });
+            if (itr != mSpellTargetPositions.end() && !mSpellTargetPositions.contains({ twin, SpellEffIndex(i) }))
+                mSpellTargetPositions[{ twin, SpellEffIndex(i) }] = itr->second;
+        }
+    }
+
     /*
     // Check all spells
     for (uint32 i = 1; i < GetSpellInfoStoreSize; ++i)
@@ -1726,6 +1815,8 @@ void SpellMgr::LoadSpellCones()
         }
     } while (result->NextRow());
 
+    CopyToSpellTwins(mSpellCones);
+
     LOG_INFO("server.loading", ">> Loaded {} Spell Cone definitions in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
 }
@@ -1805,6 +1896,22 @@ void SpellMgr::LoadSpellGroups()
             ++count;
             mSpellSpellGroup.emplace(*spellItr, SpellGroup(*groupItr));
         }
+    }
+
+    std::vector<std::pair<uint32, SpellGroup>> twinGroups;
+    for (auto const& [source, twin] : _spellTwins)
+    {
+        if (mSpellSpellGroup.contains(twin))
+            continue;
+        auto const [begin, end] = mSpellSpellGroup.equal_range(source);
+        for (auto itr = begin; itr != end; ++itr)
+            twinGroups.emplace_back(twin, itr->second);
+    }
+    for (auto const& [twin, group] : twinGroups)
+    {
+        mSpellSpellGroup.emplace(twin, group);
+        mSpellGroupSpell.emplace(group, int32(twin));
+        ++count;
     }
 
     LOG_INFO("server.loading", ">> Loaded {} spell group Definitions in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
@@ -2202,6 +2309,8 @@ void SpellMgr::LoadSpellProcs()
 
     // Generate default procs for spells with proc flags but no explicit spell_proc entry
     // This ensures backward compatibility and covers spells that rely on DBC data
+    CopyToSpellTwins(mSpellProcMap);
+
     LOG_INFO("server.loading", "Generating spell proc data from SpellMap...");
     count = 0;
     oldMSTime = getMSTime();
@@ -2373,6 +2482,8 @@ void SpellMgr::LoadSpellBonuses()
         ++count;
     } while (result->NextRow());
 
+    CopyToSpellTwins(mSpellBonusMap);
+
     LOG_INFO("server.loading", ">> Loaded {} Extra Spell Bonus Data in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
 }
@@ -2414,6 +2525,8 @@ void SpellMgr::LoadSpellThreats()
         ++count;
     } while (result->NextRow());
 
+    CopyToSpellTwins(mSpellThreatMap);
+
     LOG_INFO("server.loading", ">> Loaded {} SpellThreatEntries in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
 }
@@ -2449,6 +2562,8 @@ void SpellMgr::LoadSpellMixology()
         mSpellMixologyMap[entry] = fields[1].Get<float>();
         ++count;
     } while (result->NextRow());
+
+    CopyToSpellTwins(mSpellMixologyMap);
 
     LOG_INFO("server.loading", ">> Loaded {} Mixology Bonuses in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
@@ -2533,6 +2648,16 @@ void SpellMgr::LoadSpellPetAuras()
 
         ++count;
     } while (result->NextRow());
+
+    for (auto const& [source, twin] : _spellTwins)
+    {
+        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        {
+            auto const itr = mSpellPetAuraMap.find((source << 8) + i);
+            if (itr != mSpellPetAuraMap.end() && !mSpellPetAuraMap.contains((twin << 8) + i))
+                mSpellPetAuraMap.emplace((twin << 8) + i, itr->second);
+        }
+    }
 
     LOG_INFO("server.loading", ">> Loaded {} Spell Pet Auras in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
@@ -2673,6 +2798,19 @@ void SpellMgr::LoadSpellLinked()
 
         ++count;
     } while (result->NextRow());
+
+    SpellLinkedMap twinLinks;
+    for (auto const& [trigger, effects] : mSpellLinkedMap)
+    {
+        int32 const spellId = std::abs(trigger) % SPELL_LINKED_MAX_SPELLS;
+        auto const twin = _spellTwins.find(spellId);
+        if (twin == _spellTwins.end())
+            continue;
+        int32 const twinTrigger = trigger + (trigger < 0 ? -1 : 1) * (int32(twin->second) - spellId);
+        if (!mSpellLinkedMap.contains(twinTrigger))
+            twinLinks.emplace(twinTrigger, effects);
+    }
+    mSpellLinkedMap.merge(twinLinks);
 
     LOG_INFO("server.loading", ">> Loaded {} Linked Spells in {} ms", count, GetMSTimeDiffToNow(oldMSTime));
     LOG_INFO("server.loading", " ");
@@ -3214,6 +3352,7 @@ void SpellMgr::LoadSpellInfoCustomAttributes()
     uint32 count;
 
     QueryResult result = WorldDatabase.Query("SELECT spell_id, attributes FROM spell_custom_attr");
+    std::unordered_map<uint32, uint32> databaseAttributes;
 
     if (!result)
     {
@@ -3281,6 +3420,14 @@ void SpellMgr::LoadSpellInfoCustomAttributes()
             }
 
             spellInfo->AttributesCu |= attributes;
+            databaseAttributes[spellId] = attributes;
+        }
+
+        for (auto const& [source, twin] : _spellTwins)
+        {
+            auto const itr = databaseAttributes.find(source);
+            if (itr != databaseAttributes.end() && !databaseAttributes.contains(twin))
+                mSpellInfoMap[twin]->AttributesCu |= itr->second;
         }
         LOG_INFO("server.loading", ">> Loaded {} spell custom attributes from DB in {} ms", count, GetMSTimeDiffToNow(customAttrTime));
     }

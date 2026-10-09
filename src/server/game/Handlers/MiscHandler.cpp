@@ -34,6 +34,7 @@
 #include "InstanceSaveMgr.h"
 #include "InstanceScript.h"
 #include "Language.h"
+#include "LocalLevelScaling.h"
 #include "Log.h"
 #include "LootMgr.h"
 #include "MapMgr.h"
@@ -1120,6 +1121,8 @@ void WorldSession::HandleInspectOpcode(WorldPacket& recv_data)
 
     player->BuildEnchantmentsInfoData(&data);
     SendPacket(&data);
+
+    LocalLevelScaling::NotifyInspected(_player, player);
 }
 
 void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
@@ -1657,8 +1660,10 @@ void WorldSession::HandleCancelMountAuraOpcode(WorldPacket& /*recv_data*/)
     if (!_player->IsMounted())
         return;
 
-    // The client sends this with every cast while mounted; the Mechsuit is left through its own aura.
-    if (_player->IsInTinkerMechsuit())
+    // The client sends this with every cast while mounted; these combat mounts are left through their auras.
+    if (_player->IsInTinkerMechsuit() ||
+        (_player->getClass() == CLASS_STARCALLER && !_player->IsInFlight() &&
+            _player->GetMountID() == 9991 && _player->HasAura(704772, _player->GetGUID())))
         return;
 
     if (_player->IsInFlight())                               // not blizz like; no any messages on blizz

@@ -83,6 +83,7 @@
 // Ascension's caster state for "only usable after the target dodges" (its Overpower and the Chaser strikes),
 // which it uses instead of the warrior's combo point.
 constexpr AuraStateType ASCENSION_AURA_STATE_TARGET_DODGED = AuraStateType(24);
+constexpr uint32 ASCENSION_SPELL_HELLKNIGHT = 800703;
 
 float baseMoveSpeed[MAX_MOVE_TYPE] =
 {
@@ -115,6 +116,52 @@ static bool IsClassicPlusCombat(Unit const* attacker, Unit const* victim)
     return sWorld->getBoolConfig(CONFIG_CLASSIC_PLUS_COMBAT_RULES) &&
         ClassicPlusCombat::IsClassicContext({ attacker->getLevelForTarget(victim), attacker->IsControlledByPlayer() },
             { victim->getLevelForTarget(attacker), victim->IsControlledByPlayer() });
+}
+
+// The level a creature is fought at by the character behind `opponent`: their own version of it when they have
+// one. Unlike getLevelForTarget it keeps a world boss's real level, which the stock armor and resistance formulas
+// read.
+static uint8 ShownCombatLevel(Unit const* unit, Unit const* opponent)
+{
+    if (Creature const* creature = unit->ToCreature())
+        if (Player const* viewer = opponent ? opponent->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr)
+            if (uint8 const view = LocalLevelScaling::ViewLevelFor(viewer, creature))
+                return view;
+    return unit->GetLevel();
+}
+
+// Real max health over the max health of the version of `creature` the character behind `source` sees, or 0 when
+// they see the creature itself.
+static double PoolFactor(Unit const* source, Creature const* creature)
+{
+    Player const* viewer = source ? source->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr;
+    if (!viewer || !creature)
+        return 0.0;
+
+    uint32 const viewMaxHealth = LocalLevelScaling::ViewMaxHealthFor(viewer, creature);
+    if (!viewMaxHealth)
+        return 0.0;
+
+    return double(std::max<uint32>(creature->GetMaxHealth(), 1)) / double(viewMaxHealth);
+}
+
+float LocalLevelScaling::PoolThreatFor(Unit const* source, Unit const* threatOwner, float threat)
+{
+    if (threat == 0.0f || !source || !threatOwner || source == threatOwner)
+        return threat;
+
+    double const factor = PoolFactor(source, threatOwner->ToCreature());
+    return factor > 0.0 ? float(double(threat) * factor) : threat;
+}
+
+uint32 LocalLevelScaling::ShownHealthFor(Unit const* attacker, Unit const* victim)
+{
+    uint32 const health = victim ? victim->GetHealth() : 0;
+    double const factor = health ? PoolFactor(attacker, victim->ToCreature()) : 0.0;
+    if (factor <= 0.0)
+        return health;
+
+    return uint32(std::min<double>(std::round(double(health) / factor), double(std::numeric_limits<uint32>::max())));
 }
 
 static float ClassicCreatureAvoidanceChance(Unit const* creature, AuraType aura)
@@ -2223,6 +2270,9 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
         uint32 VictimDefense = victim->GetDefenseSkillValue();
         uint32 VictimAuraDefense = -victim->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_MELEE_CRIT_CHANCE) * 25;
         uint32 AttackerMeleeSkill = GetUnitMeleeSkill();
+        if (Player const* viewer = victim->GetCharmerOrOwnerPlayerOrPlayerItself())
+            if (uint8 const view = LocalLevelScaling::ViewLevelFor(viewer, ToCreature()))
+                AttackerMeleeSkill = view * 5;
 
         // xinef: fix daze mechanics
         float const chancePerSkillPoint = IsClassicPlusCombat(this, victim) ?
@@ -2434,12 +2484,13 @@ uint32 Unit::CalcArmorReducedDamage(Unit const* attacker, Unit const* victim, co
         if (attacker->IsPlayer() || bonusPct)
         {
             float maxArmorPen = 0;
+            uint8 const victimLevel = ShownCombatLevel(victim, attacker);
             if (classic)
                 maxArmorPen = ClassicPlusCombat::ArmorConstant(victim->getLevelForTarget(attacker));
-            else if (victim->GetLevel() < 60)
-                maxArmorPen = float(400 + 85 * victim->GetLevel());
+            else if (victimLevel < 60)
+                maxArmorPen = float(400 + 85 * victimLevel);
             else
-                maxArmorPen = 400 + 85 * victim->GetLevel() + 4.5f * 85 * (victim->GetLevel() - 59);
+                maxArmorPen = 400 + 85 * victimLevel + 4.5f * 85 * (victimLevel - 59);
 
             // Cap armor penetration to this number
             maxArmorPen = std::min((armor + maxArmorPen) / 3, armor);
@@ -2453,7 +2504,7 @@ uint32 Unit::CalcArmorReducedDamage(Unit const* attacker, Unit const* victim, co
     if (armor < 0.0f)
         armor = 0.0f;
 
-    float levelModifier = attacker ? attacker->GetLevel() : attackerLevel;
+    float levelModifier = attacker ? ShownCombatLevel(attacker, victim) : attackerLevel;
     if (levelModifier > 59)
         levelModifier = levelModifier + (4.5f * (levelModifier - 59));
 
@@ -2498,10 +2549,11 @@ float Unit::GetEffectiveResistChance(Unit const* owner, SpellSchoolMask schoolMa
             int32(victim->getLevelForTarget(owner)) - int32(casterLevel), casterLevel, levelBased);
     }
 
+    uint8 const victimLevel = owner ? ShownCombatLevel(victim, owner) : victim->GetLevel();
     if (owner && (!spellInfo || !spellInfo->HasAttribute(SPELL_ATTR0_CU_BINARY_SPELL)))
-        victimResistance += std::max(static_cast<float>(victim->GetLevel() - owner->GetLevel()) * 5.0f, 0.0f);
+        victimResistance += std::max(static_cast<float>(victimLevel - ShownCombatLevel(owner, victim)) * 5.0f, 0.0f);
 
-    float level = static_cast<float>(victim->GetLevel());
+    float level = static_cast<float>(victimLevel);
     float resistanceConstant = 0.0f;
 
     if (level > 60.0f)
@@ -7283,7 +7335,7 @@ void Unit::SendSpellNonMeleeReflectLog(SpellNonMeleeDamage* log, Unit* attacker)
     data << attacker->GetPackGUID();
     data << uint32(log->spellInfo->Id);
     data << uint32(damage);                                 // damage amount
-    int32 overkill = damage - log->target->GetHealth();
+    int32 overkill = damage - LocalLevelScaling::ShownHealthFor(attacker, log->target);
     data << uint32(overkill > 0 ? overkill : 0);            // overkill
     data << uint8 (log->schoolMask);                        // damage school
     data << uint32(absorb);                                 // AbsorbedDamage
@@ -7311,7 +7363,7 @@ void Unit::SendSpellNonMeleeDamageLog(SpellNonMeleeDamage* log)
     data << log->attacker->GetPackGUID();
     data << uint32(log->spellInfo->Id);
     data << uint32(damage);                                 // damage amount
-    int32 overkill = damage - log->target->GetHealth();
+    int32 overkill = damage - LocalLevelScaling::ShownHealthFor(log->attacker, log->target);
     data << uint32(overkill > 0 ? overkill : 0);            // overkill
     data << uint8 (log->schoolMask);                        // damage school
     data << uint32(absorb);                                 // AbsorbedDamage
@@ -7517,7 +7569,8 @@ void Unit::SendAttackStateUpdate(CalcDamageInfo* damageInfo)
     data << damageInfo->attacker->GetPackGUID();
     data << damageInfo->target->GetPackGUID();
     data << uint32(tmpDamage[0] + tmpDamage[1]);                    // Full damage
-    int32 overkill = tmpDamage[0] + tmpDamage[1] - damageInfo->target->GetHealth();
+    int32 overkill = tmpDamage[0] + tmpDamage[1]
+        - LocalLevelScaling::ShownHealthFor(damageInfo->attacker, damageInfo->target);
     data << uint32(overkill < 0 ? 0 : overkill);                    // Overkill
     data << uint8(count);                                           // Sub damage count
 
@@ -9891,6 +9944,9 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
         }
         // ... and attack power
         DoneAdvertisedBenefit += int32(CalculatePct(GetTotalAttackPowerValue(BASE_ATTACK), GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_DAMAGE_OF_ATTACK_POWER, schoolMask)));
+        if (HasAura(84866))
+            DoneAdvertisedBenefit = int32(std::clamp<int64>(int64(DoneAdvertisedBenefit) * 2,
+                std::numeric_limits<int32>::min(), std::numeric_limits<int32>::max()));
     }
     return DoneAdvertisedBenefit;
 }
@@ -10695,6 +10751,9 @@ int32 Unit::SpellBaseHealingBonusDone(SpellSchoolMask schoolMask)
 
         // ... and attack power
         AdvertisedBenefit += int32(CalculatePct(GetTotalAttackPowerValue(BASE_ATTACK), GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_HEALING_OF_ATTACK_POWER, schoolMask)));
+        if (HasAura(84866))
+            AdvertisedBenefit = int32(std::clamp<int64>(int64(AdvertisedBenefit) * 2,
+                std::numeric_limits<int32>::min(), std::numeric_limits<int32>::max()));
     }
     return AdvertisedBenefit;
 }
@@ -10864,6 +10923,17 @@ bool Unit::IsImmunedToAuraPeriodicTick(Unit const* caster, SpellInfo const* spel
     return false;
 }
 
+static bool IsUncontrolledCreature(Unit const* unit)
+{
+    return unit->IsCreature() && !unit->IsCharmedOwnedByPlayerOrPlayer();
+}
+
+// CoA: poisons that count as bleeds still hit bleed-immune NPCs.
+static bool IsIgnoredCreatureMechanicImmunity(Unit const* unit, SpellInfo const* spellInfo, uint32 mechanic)
+{
+    return mechanic == MECHANIC_BLEED && spellInfo->Dispel == DISPEL_POISON && IsUncontrolledCreature(unit);
+}
+
 bool Unit::IsImmunedToSpell(SpellInfo const* spellInfo, Unit const* caster)
 {
     return IsImmunedToSpell(spellInfo, caster, spellInfo ? spellInfo->GetSchoolMask() : SPELL_SCHOOL_MASK_NONE);
@@ -10899,7 +10969,7 @@ bool Unit::IsImmunedToSpell(SpellInfo const* spellInfo, Unit const* caster, Spel
     }
 
     // Spells that don't have effectMechanics.
-    if (uint32 mechanic = spellInfo->Mechanic)
+    if (uint32 mechanic = spellInfo->Mechanic; mechanic && !IsIgnoredCreatureMechanicImmunity(this, spellInfo, mechanic))
     {
         SpellImmuneContainer const& mechanicList = m_spellImmune[IMMUNITY_MECHANIC];
         if (mechanicList.count(mechanic) > 0)
@@ -10974,7 +11044,8 @@ bool Unit::IsImmunedToSpellEffect(SpellInfo const* spellInfo, uint32 index, Unit
         }
     }
 
-    if (uint32 mechanic = spellInfo->Effects[index].Mechanic)
+    if (uint32 mechanic = spellInfo->Effects[index].Mechanic;
+        mechanic && !IsIgnoredCreatureMechanicImmunity(this, spellInfo, mechanic))
     {
         auto const& mechanicList = m_spellImmune[IMMUNITY_MECHANIC];
         if (mechanicList.count(mechanic) > 0)
@@ -11329,10 +11400,26 @@ private:
     uint32 _type;
 };
 
+// CoA: NPCs are never spell or damage immune to only some schools (fire elementals to fire, etc.) nor to
+// poisons; full invulnerability stays.
+static bool IsIgnoredCreatureImmunity(Unit const* unit, uint32 op, uint32 type)
+{
+    if (!IsUncontrolledCreature(unit))
+        return false;
+
+    if (op == IMMUNITY_SCHOOL || op == IMMUNITY_DAMAGE)
+        return (type & SPELL_SCHOOL_MASK_ALL) != SPELL_SCHOOL_MASK_ALL;
+
+    return op == IMMUNITY_DISPEL && type == DISPEL_POISON;
+}
+
 void Unit::ApplySpellImmune(uint32 spellId, uint32 op, uint32 type, bool apply, SpellImmuneBlockType /*blockType*/)
 {
     if (apply)
-        m_spellImmune[op].emplace(type, spellId);
+    {
+        if (!IsIgnoredCreatureImmunity(this, op, type))
+            m_spellImmune[op].emplace(type, spellId);
+    }
     else
     {
         auto bounds = m_spellImmune[op].equal_range(type);
@@ -12085,6 +12172,9 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
     // now we ready for speed calculation
     if (mtype == MOVE_RUN && !IsMounted() && IsPlayer() && getClass() == CLASS_WITCH_HUNTER && HasAura(504790))
         main_speed_mod = std::max(main_speed_mod, 20);
+    if (mtype == MOVE_RUN && !IsMounted())
+        if (AuraEffect const* hellknight = GetAuraEffect(ASCENSION_SPELL_HELLKNIGHT, EFFECT_0))
+            main_speed_mod = std::max(main_speed_mod, -hellknight->GetAmount());
     float speed = std::max(non_stack_bonus, stack_bonus);
     if (main_speed_mod)
         AddPct(speed, main_speed_mod);
@@ -15718,10 +15808,14 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
         GetMotionMaster()->MoveIdle();
         StopMoving();
 
-        if (charmer->IsPlayer() && charmer->IsClass(CLASS_WARLOCK, CLASS_CONTEXT_PET_CHARM) && ToCreature()->GetCreatureTemplate()->type == CREATURE_TYPE_DEMON)
+        Creature* charmed = ToCreature();
+        bool const controlMechanical = type == CHARM_TYPE_CHARM && aurApp && aurApp->GetBase()->GetId() == 807846 &&
+            charmed->GetCreatureTemplate()->type == CREATURE_TYPE_MECHANICAL;
+        if (charmer->IsPlayer() && (controlMechanical ||
+            (charmer->IsClass(CLASS_WARLOCK, CLASS_CONTEXT_PET_CHARM) &&
+                charmed->GetCreatureTemplate()->type == CREATURE_TYPE_DEMON)))
         {
-            // Disable CreatureAI/SmartAI and switch to CharmAI when charmed by warlock
-            Creature* charmed = ToCreature();
+            // Use pet AI for Enslave Demon and Control Mechanical.
             charmed->NeedChangeAI = true;
             charmed->IsAIEnabled = false;
         }
@@ -17915,7 +18009,8 @@ void Unit::BuildValuesUpdate(uint8 updateType, ByteBuffer* data, Player* target)
             }
             else
             {
-                if (sScriptMgr->ShouldTrackValuesUpdatePosByIndex(this, updateType, index))
+                if (sScriptMgr->ShouldTrackValuesUpdatePosByIndex(this, updateType, index) ||
+                    (index == UNIT_FIELD_LEVEL && IsCreature() && LocalLevelScaling::ItemPreviewActive()))
                     cacheValue.posPointers.other[index] = static_cast<uint32>(fieldBuffer.wpos());
 
                 // send in current format (float as float, uint32 as uint32)
@@ -18082,6 +18177,20 @@ void Unit::PatchValuesUpdate(ByteBuffer& valuesUpdateBuf, BuildValuesCachePosPoi
     }
 
     sScriptMgr->OnPatchValuesUpdate(this, valuesUpdateBuf, posPointers, target);
+
+    if (uint32 corpseLevel = LocalLevelScaling::CorpsePreviewLevel(target, creature))
+        if (auto const level = posPointers.other.find(UNIT_FIELD_LEVEL); level != posPointers.other.end())
+            valuesUpdateBuf.put(level->second, corpseLevel);
+}
+
+void Unit::ReplaceAllDynamicFlags(uint32 flag)
+{
+    // A lootable corpse shows each character allowed to loot it a level of their own (the loot preview), so the
+    // level is re-sent whenever the lootable bit changes.
+    if (IsCreature() && LocalLevelScaling::ItemPreviewActive() &&
+        ((GetUInt32Value(UNIT_DYNAMIC_FLAGS) ^ flag) & UNIT_DYNFLAG_LOOTABLE))
+        ForceValuesUpdateAtIndex(UNIT_FIELD_LEVEL);
+    SetUInt32Value(UNIT_DYNAMIC_FLAGS, flag);
 }
 
 void Unit::BuildCooldownPacket(WorldPacket& data, uint8 flags, uint32 spellId, uint32 cooldown)
