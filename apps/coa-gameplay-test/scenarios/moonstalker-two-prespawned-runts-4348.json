@@ -5,14 +5,18 @@
     "The report describes two runts already present before their matriarch enters combat. Observe native spawn-",
     "time SmartAI from outside aggro range, without injecting a summon. The two runts must survive longer than",
     "the old 30-second combat-summon lifetime; entering combat must not create a third. Killing the matriarch",
-    "must preserve the owner-specific cleanup added for #4347."
+    "must preserve the owner-specific cleanup added for #4347. The summoned runts are level 16-17, as reported",
+    "in upstream issue 8795 and supported by summon spell 8594's -3 level value. Both must wander from their",
+    "spawn positions; the 10-yard radius comes from existing wild Moonstalker Runt spawn data. Use the real",
+    "Darkshore Matriarch spawn 36967 as the mother's position, with the observer 30 yards west, so wandering",
+    "runs on terrain and navigation data that support these ground creatures."
   ],
-  "timeout_ms": 60000,
+  "timeout_ms": 90000,
   "location": {
     "map": 1,
-    "x": 16226.2,
-    "y": 16257.0,
-    "z": 13.2022,
+    "x": 7788.77,
+    "y": -982.033,
+    "z": 32.4169,
     "o": 0
   },
   "players": [
@@ -64,6 +68,26 @@
       "equals": 2,
       "within_ms": 3000,
       "label": "Exactly two runts exist before combat"
+    },
+    {
+      "action": "assert",
+      "actor": "observer",
+      "metric": "nearby_creature_count",
+      "entry": 2070,
+      "min_level": 16,
+      "max_level": 17,
+      "equals": 2,
+      "label": "Both summoned runts have the reported level"
+    },
+    {
+      "action": "assert",
+      "actor": "observer",
+      "metric": "nearby_creature_count",
+      "entry": 2070,
+      "min_home_distance": 1,
+      "equals": 2,
+      "within_ms": 15000,
+      "label": "Both runts move away from their own spawn positions before combat"
     },
     {
       "action": "wait",

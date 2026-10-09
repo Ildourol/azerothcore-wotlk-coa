@@ -12,4 +12,7 @@ INSERT INTO `smart_scripts` (
     'Moonstalker Matriarch - On Respawn - Summon Two Moonstalker Runts'),
 (2071, 0, 1, 0, 6, 0, 100, 0, 0, 0, 0, 0, 0, 0,
     41, 0, 0, 0, 0, 0, 0, 204, 2070, 0, 0, 0, 0, 0, 0, 0,
-    'Moonstalker Matriarch - On Death - Despawn Own Moonstalker Runts');
+    'Moonstalker Matriarch - On Death - Despawn Own Moonstalker Runts'),
+(2071, 0, 2, 0, 17, 0, 100, 0, 2070, 0, 0, 0, 0, 0,
+    89, 10, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0,
+    'Moonstalker Matriarch - On Summoned Moonstalker Runt - Wander');
