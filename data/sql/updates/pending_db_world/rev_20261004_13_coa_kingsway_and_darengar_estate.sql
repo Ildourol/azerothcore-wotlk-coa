@@ -47,7 +47,7 @@ INSERT INTO `creature_template_model` (`CreatureID`, `Idx`, `CreatureDisplayID`,
 (164580, 0, 134, 1, 1, 0),
 (9920040, 0, 3258, 1, 1, 0),
 (9920041, 0, 5032, 1, 1, 0),
-(164944, 0, 32546, 1, 1, 0),
+(164944, 0, 32546, 1.5, 1, 0),
 (164020, 1, 50, 1, 1, 0),
 (164021, 1, 50, 1, 1, 0);
 DELETE FROM `creature_model_info` WHERE `DisplayID` IN (137698, 138808, 36944, 32546, 142806);

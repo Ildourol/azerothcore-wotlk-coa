@@ -110,6 +110,7 @@ INSERT INTO `quest_request_items` (`ID`, `EmoteOnComplete`, `EmoteOnIncomplete`,
 (175002, 0, 0, 'Welcome to the Darengar Family Estate.', 0);
 DELETE FROM `creature_queststarter` WHERE `quest` IN (175000, 175001, 175002, 175198);
 INSERT INTO `creature_queststarter` (`id`, `quest`) VALUES
+(164000, 175000),
 (164001, 175001),
 (164001, 175002),
 (164215, 175198);
