@@ -9,7 +9,10 @@
     "in upstream issue 8795 and supported by summon spell 8594's -3 level value. Both must wander from their",
     "spawn positions; the 10-yard radius comes from existing wild Moonstalker Runt spawn data. Use the real",
     "Darkshore Matriarch spawn 36967 as the mother's position, with the observer 30 yards west, so wandering",
-    "runs on terrain and navigation data that support these ground creatures."
+    "runs on terrain and navigation data that support these ground creatures.",
+    "The fixture creator places the mother at the observer's initial Z. After creating that mother at the",
+    "real spawn height, teleport only the observer to its local ground height, 28.1901, and verify both the",
+    "native terrain height and observer Z. This keeps the observer in melee reach when the mother chases it."
   ],
   "timeout_ms": 90000,
   "location": {
@@ -43,6 +46,32 @@
     }
   ],
   "steps": [
+    {
+      "action": "teleport",
+      "actor": "observer",
+      "map": 1,
+      "x": 7788.77,
+      "y": -982.033,
+      "z": 28.1901,
+      "o": 0,
+      "label": "Place the observer on the ground without moving the mother or runts"
+    },
+    {
+      "action": "assert",
+      "actor": "observer",
+      "metric": "ground_height",
+      "min": 28.1,
+      "max": 28.3,
+      "label": "The observer position has the expected native terrain height"
+    },
+    {
+      "action": "assert",
+      "actor": "observer",
+      "metric": "position_z",
+      "min": 28.1,
+      "max": 28.3,
+      "label": "The observer stands at ground level for native melee"
+    },
     {
       "action": "set_aura",
       "actor": "observer",
