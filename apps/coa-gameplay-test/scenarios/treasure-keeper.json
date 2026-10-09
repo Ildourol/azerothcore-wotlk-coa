@@ -137,10 +137,10 @@
       "action": "assert",
       "actor": "keeper",
       "metric": "pet_scale",
-      "min": 0.99,
-      "max": 1.01,
+      "min": 1.39,
+      "max": 1.41,
       "within_ms": 4000,
-      "label": "at the scale its half-size display expects"
+      "label": "at the scale the live server summons it with"
     },
     {
       "action": "banker_activate",
@@ -183,10 +183,10 @@
       "action": "assert",
       "actor": "keeper",
       "metric": "pet_scale",
-      "min": 0.14,
-      "max": 0.15,
+      "min": 0.22,
+      "max": 0.24,
       "within_ms": 4000,
-      "label": "at the scale that counters that display's own 3.5x client scale"
+      "label": "at the live scale that brings that display's own 3.5x client scale down"
     },
     {
       "action": "banker_activate",

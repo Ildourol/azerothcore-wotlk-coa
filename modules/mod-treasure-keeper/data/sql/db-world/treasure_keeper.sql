@@ -22,11 +22,10 @@
 --        display 47857 (Celestial, Creature\CelestialHuman\CelestialHuman.m2)  client 3.5
 --        display 48611 (wyrmtongue, Creature\wyrmtongue\wyrmtongue.mdx)        client 0.5
 --
---    The plain keeper is therefore already right at 1.0 (a half-size wyrmtongue); the Celestial
---    one renders at 3.5x and reads as a giant. 0.1429 counters it to the same half-size as its
---    plain sibling. This is the one value here that no dump can confirm - the live server's
---    scale never reaches a client - so it is the value to adjust if the pet should sit larger;
---    0.2857 would put the Celestial at its model's natural (human) size instead.
+--    At 1.0 the Celestial one renders at 3.5x and reads as a giant. Live sniffs (2026-08-31/09-01)
+--    carry OBJECT_FIELD_SCALE_X 0.23 for the summoned Celestial keeper and 1.4 for the plain one,
+--    so live draws them at 0.8x and 0.7x. The plain keeper's 1.4 is set by the pending world update
+--    that restores the companions' live scales.
 --
 -- Deliberately not touched: `type` (live caches say 7 Humanoid where these rows say 12
 -- Non-combat Pet), `MovementType` (live movementId 999) and the items, spells, displays and
@@ -42,9 +41,9 @@ UPDATE `creature_template`
 SET `npcflag` = 131072, `unit_flags` = 768
 WHERE `entry` IN (80918, 10111377);
 
--- 2. The Celestial one next to its plain sibling: 3.5 x 0.1429 = 0.5, the wyrmtongue's own size.
+-- 2. The Celestial one at its live scale: 3.5 x 0.23 = 0.8.
 UPDATE `creature_template_model`
-SET `DisplayScale` = 0.1429
+SET `DisplayScale` = 0.23
 WHERE `CreatureID` = 80918 AND `Idx` = 0;
 
 -- 3. Bind the two summon spells to the ruleset gate. A registered spell script runs only where

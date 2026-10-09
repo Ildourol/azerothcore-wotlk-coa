@@ -42,12 +42,12 @@ A creature renders at `CreatureDisplayInfo.dbc`'s scale multiplied by
 | creature | display | client scale | server scale | rendered |
 | --- | --- | --- | --- | --- |
 | 80918 Celestial (before) | 47857 | **3.5** | 1 | **3.5×** |
-| 10111377 Treasure Keeper | 48611 | 0.5 | 1 | 0.5× (correct) |
+| 80918 Celestial (live) | 47857 | 3.5 | 0.23 | 0.8× |
+| 10111377 Treasure Keeper (live) | 48611 | 0.5 | 1.4 | 0.7× |
 
-So the plain keeper was already right and the Celestial one three and a half times its intended
-size. The SQL counters it to the plain sibling's 0.5×: `3.5 × 0.1429`. This is the one value no
-capture can confirm — the live server's scale never reaches a client — so it is the number to change
-if the pet should sit larger; `0.2857` would put the model at its natural (human) size instead.
+At a server scale of 1 the Celestial one drew three and a half times its intended size. The server
+scales are the live ones: the summoned companions' `OBJECT_FIELD_SCALE_X` in live sniffs taken
+2026-08-31/09-01. This module's SQL sets the Celestial one; a pending world update sets both.
 Reported by the realm's own bug stream as *"Celestial Treasure Keeper Massive and Non-Interactable"*
 and *"Treasure Keeper not working … Right clicking the pet should give access to the bank"*.
 
