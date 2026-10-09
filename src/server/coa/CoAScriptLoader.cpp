@@ -39,6 +39,7 @@ void AddSC_AscensionDungeonRelease();
 void AddSC_AscensionRaidRelease();
 void AddSC_AscensionThreatRedirect();
 void AddSC_AscensionTalentDataProcs();
+void AddSC_AscensionTreeOfLife();
 void AddSC_CoALfgStartPoint();
 void AddSC_CoABossProbe();
 void AddSC_CoADungeonSpellDamage();
@@ -671,6 +672,7 @@ void AddCoAScripts()
     AddSC_AscensionRaidRelease();
     AddSC_AscensionThreatRedirect();
     AddSC_AscensionTalentDataProcs();
+    AddSC_AscensionTreeOfLife();
     AddSC_CoALfgStartPoint();
     AddSC_CoABossProbe();
     AddSC_CoADungeonSpellDamage();
