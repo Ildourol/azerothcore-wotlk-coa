@@ -423,6 +423,7 @@ struct Actor
     std::map<uint32, uint32> creatureQueryRank;
     std::map<uint32, uint32> questQueryFlags;
     std::map<uint32, uint32> questQueryFirstChoiceItem;
+    std::map<uint32, uint32> questOfferXP;
     uint32 lastQuestWindow = 0;
     uint32 lastStableResult = 0;
     uint32 lfgProposalId = 0;
@@ -897,6 +898,31 @@ void ObservePacket(Actor& actor, WorldPacket const& packet)
         packet.GetOpcode() == SMSG_QUESTGIVER_REQUEST_ITEMS ||
         packet.GetOpcode() == SMSG_QUESTGIVER_QUEST_DETAILS)
         actor.lastQuestWindow = packet.GetOpcode();
+
+    if (packet.GetOpcode() == SMSG_QUESTGIVER_OFFER_REWARD)
+    {
+        WorldPacket offer(packet);
+        ObjectGuid giver;
+        uint32 quest;
+        std::string title;
+        std::string text;
+        uint8 enableNext;
+        uint32 flags;
+        uint32 suggestedPlayers;
+        uint32 emotes;
+        offer >> giver >> quest >> title >> text >> enableNext >> flags >> suggestedPlayers >> emotes;
+        offer.read_skip(std::size_t(emotes) * 2 * sizeof(uint32));
+        uint32 choices;
+        offer >> choices;
+        offer.read_skip(std::size_t(choices) * 3 * sizeof(uint32));
+        uint32 items;
+        offer >> items;
+        offer.read_skip(std::size_t(items) * 3 * sizeof(uint32));
+        uint32 money;
+        uint32 xp;
+        offer >> money >> xp;
+        actor.questOfferXP[quest] = xp;
+    }
 
     if (packet.GetOpcode() == SMSG_INITIAL_SPELLS)
     {
@@ -2098,6 +2124,12 @@ private:
             Actor& actor = _actors.at(step.get<std::string>("actor"));
             auto itr = actor.creatureQueryRank.find(step.get<uint32>("entry"));
             return itr == actor.creatureQueryRank.end() ? -1 : int64(itr->second);
+        }
+        if (metric == "quest_offer_sent_xp")
+        {
+            Actor const& actor = _actors.at(step.get<std::string>("actor"));
+            auto const found = actor.questOfferXP.find(step.get<uint32>("quest"));
+            return found == actor.questOfferXP.end() ? -1 : int64(found->second);
         }
         if (metric == "quest_level" || metric == "quest_xp")
         {

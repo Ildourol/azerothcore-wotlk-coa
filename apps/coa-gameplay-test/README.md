@@ -879,6 +879,8 @@ last creature query response delivered to that session, or -1 before one arrives
 and query the native quest level and XP calculations without awarding a reward.
 `quest_log_sent_level` and `quest_log_sent_xp` take the same arguments and return the last level or reward XP
 sent for that quest's log slot in `SMSG_UPDATE_OBJECT_ADDON` (fields 61 and 36 + slot), or -1 before one arrives.
+`quest_offer_sent_xp` reads the reward XP in the last native `SMSG_QUESTGIVER_OFFER_REWARD` for that quest,
+or -1 before the session receives a reward offer.
 `quest_query_scaled` takes the same arguments and returns 1 when the last quest query response for that quest
 carried the client's scaled-quest flag `0x01000000`, 0 when it did not, or -1 before one arrives.
 `quest_query_reward_choice` takes the same arguments and returns the first choice reward item id in the last quest
