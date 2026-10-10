@@ -629,7 +629,7 @@ void ObserveExtensionPacket(Actor& actor, WorldPacket const& packet)
         packet.GetOpcode() != SMSG_SUPERCEDED_SPELL && packet.GetOpcode() != SMSG_REMOVED_SPELL &&
         packet.GetOpcode() != SMSG_ITEM_QUERY_SINGLE_RESPONSE && packet.GetOpcode() != SMSG_MOVE_KNOCK_BACK &&
         packet.GetOpcode() != SMSG_DUEL_REQUESTED && packet.GetOpcode() != SMSG_DUEL_COUNTDOWN &&
-        packet.GetOpcode() != SMSG_DUEL_COMPLETE)
+        packet.GetOpcode() != SMSG_DUEL_COMPLETE && packet.GetOpcode() != SMSG_FRIEND_STATUS)
         return;
 
     ++actor.extensionPackets[packet.GetOpcode()];
@@ -3790,7 +3790,7 @@ private:
             });
             return selected == known.end() ? 0 : selected->Rank;
         }
-        if (metric == "server_packet_u32" || metric == "server_packet_float")
+        if (metric == "server_packet_u8" || metric == "server_packet_u32" || metric == "server_packet_float")
         {
             Actor const& actor = _actors.at(step.get<std::string>("actor"));
             uint16 const opcode = uint16(step.get<uint32>("opcode"));
@@ -3818,7 +3818,8 @@ private:
                     return -1;
                 ++offset;
             }
-            offset += std::size_t(index) * sizeof(uint32);
+            std::size_t const fieldSize = metric == "server_packet_u8" ? sizeof(uint8) : sizeof(uint32);
+            offset += std::size_t(index) * fieldSize;
             if (metric == "server_packet_float" && step.get<bool>("from_end", false))
             {
                 std::size_t const tail = (std::size_t(index) + 1) * sizeof(uint32);
@@ -3826,10 +3827,10 @@ private:
                     return -1;
                 offset = payload->size() - tail;
             }
-            if (offset > payload->size() || payload->size() - offset < sizeof(uint32))
+            if (offset > payload->size() || payload->size() - offset < fieldSize)
                 return -1;
             uint32 value = 0;
-            for (uint32 byte = 0; byte < sizeof(uint32); ++byte)
+            for (std::size_t byte = 0; byte < fieldSize; ++byte)
                 value |= uint32(uint8((*payload)[offset + byte])) << (byte * 8);
             if (metric == "server_packet_float")
             {

@@ -639,8 +639,9 @@ binds it lists, only those on map `id` when given, or -1 when it carries another
 loot window. `loot_required_level` and `loot_item_level` read those fields from the first matching item.
 These values inspect generated loot through the native item template, without changing it.
 
-`server_packets`, `server_packet_u32` and `server_packet_contains` accept `row` to capture packets whose first
-32-bit field is that value. Selected rows are retained independently of the ordinary 256-payload history limit,
+`server_packets`, `server_packet_u8`, `server_packet_u32` and `server_packet_contains` accept `row` to capture
+packets whose first 32-bit field is that value. Selected rows are retained independently of the ordinary
+256-payload history limit,
 including core opcodes. `server_packets` counts responses for that row; `server_packet_contains` returns 0 or 1
 for text in its latest response. `server_packet_u32` also accepts a byte `offset` and `skip_strings`: skip that many
 null-terminated strings at the offset, then read the 32-bit field at `index` relative to the resulting position.
@@ -720,6 +721,8 @@ reward eligibility and invokes native reward delivery. These actions do not test
 `action_button_packed` takes `button` and reads the complete action word, including its type.
 `server_packet_u32` takes `opcode` and optional zero-based `index`, and decodes a word from the last
 packet payload. It returns -1 when no such word was sent. These observe server state and packet contents.
+`server_packet_u8` uses the same fields to decode a byte, with byte-sized indexes. It can inspect the result
+byte in `SMSG_FRIEND_STATUS` (104) after a native `CMSG_ADD_FRIEND` (105) request.
 `server_packet_float` uses the same fields to decode a finite IEEE 754 float. With `from_end: true`,
 `index: 0` reads the last float and `index: 1` the preceding float, independent of a packed GUID's size.
 The recorded core packets include duel request (359), countdown (695) and completion (362), and
