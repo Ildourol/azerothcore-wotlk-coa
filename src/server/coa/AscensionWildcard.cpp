@@ -1960,7 +1960,10 @@ std::vector<Trainer::Spell> RankTrainerRows(Player const* player)
                 Trainer::Spell row;
                 row.SpellId = info->Id;
                 row.ReqAbility[0] = previous;
-                row.ReqLevel = uint8(std::clamp<uint32>(info->BaseLevel ? info->BaseLevel : info->SpellLevel, 1, 255));
+                SpellEntry const* entry = sSpellStore.LookupEntry(info->Id);
+                uint32 const baseLevel = entry ? entry->BaseLevel : info->BaseLevel;
+                uint32 const spellLevel = entry ? entry->SpellLevel : info->SpellLevel;
+                row.ReqLevel = uint8(std::clamp<uint32>(baseLevel ? baseLevel : spellLevel, 1, 255));
                 row.MoneyCost = TrainerPrice(info->Id, row.ReqLevel);
                 rows.push_back(row);
             }
