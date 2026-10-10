@@ -476,6 +476,10 @@ void LoadRankLadders(ClientDBC const& spellRanks, Tables& tables)
     for (Entry const& entry : tables.Entries)
         if (!entry.Talent)
             firstRanks.insert(entry.RankSpells.front());
+    for (EntrySpells const& entry : ENTRY_SPELLS)
+        for (uint32 spellId : entry.Spells)
+            if (spellId)
+                firstRanks.insert(spellId);
 
     for (uint32 row = 0; row < spellRanks.GetRecordCount(); ++row)
     {
