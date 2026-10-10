@@ -127,7 +127,7 @@ class spell_ascension_guardian_ability : public SpellScript
                 if (AscensionGuardian::HeavyBlow(pair.first) && player->HasActiveSpell(pair.first))
                     player->AddSpellCooldown(pair.first, 0, GetSpellInfo()->RecoveryTime, true);
         }
-        if (sSpellMgr->GetFirstSpellInChain(id) == 805150 && player->HasAura(805155))
+        if (AscensionGuardian::BroadSweep(id) && player->HasAura(805155))
             player->CastSpell(player, 806081, true);
         if (id == 803963)
             player->CastSpell(player, 807140, true);
@@ -165,7 +165,7 @@ class spell_ascension_guardian_ability : public SpellScript
         if (!target->IsAlive() || GetHitDamage() <= 0)
             return;
         uint32 root = sSpellMgr->GetFirstSpellInChain(id);
-        if (player->HasAura(705341) && (root == 805150 || root == 800316 || root == 500463))
+        if (player->HasAura(705341) && (AscensionGuardian::BroadSweep(id) || root == 800316 || root == 500463))
             player->CastCustomSpell(705342, SPELLVALUE_BASE_POINT0, int32(std::min(_energy, 1000u) * 2), target,
                 TRIGGERED_FULL_MASK);
         if (AscensionGuardian::Pulverize(id) || id == 801776 || (id >= 501068 && id <= 501074) || id == 574340)

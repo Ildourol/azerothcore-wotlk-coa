@@ -16,6 +16,7 @@ inline bool Pulverize(std::uint32_t id)
 }
 inline bool HeavyBlow(std::uint32_t id) { return id == 803129 || (id >= 503119 && id <= 503126); }
 inline bool Centurion(std::uint32_t id) { return id == 802286 || (id >= 802734 && id <= 802738); }
+inline bool BroadSweep(std::uint32_t id) { return id == 805150 || (id >= 504177 && id <= 504182); }
 inline bool Advance(std::uint32_t id) { return id == 500170 || (id >= 503344 && id <= 503351); }
 inline bool Ballad(std::uint32_t id)
 {

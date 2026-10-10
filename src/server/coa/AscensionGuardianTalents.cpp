@@ -39,7 +39,7 @@ void Synchronize(Player* player)
     {
         uint32 id = pair.first;
         if (AscensionGuardian::Pulverize(id) || AscensionGuardian::HeavyBlow(id) || AscensionGuardian::Advance(id) ||
-            sSpellMgr->GetFirstSpellInChain(id) == 805150)
+            AscensionGuardian::BroadSweep(id))
             originals.push_back(id);
     }
     std::set<uint32> desired;
@@ -53,7 +53,7 @@ void Synchronize(Player* player)
             {
                 if (AscensionGuardian::Pulverize(id))
                     replacement = BestBallad(player, Conqueror);
-                else if (sSpellMgr->GetFirstSpellInChain(id) == 805150)
+                else if (AscensionGuardian::BroadSweep(id))
                     replacement = BestBallad(player, Dragonslayer);
             }
             if (AscensionGuardian::HeavyBlow(id) && player->HasAura(706514) && player->HasAura(707138))
@@ -67,7 +67,7 @@ void Synchronize(Player* player)
             desired.insert(replacement);
         replacements[id] = replacement;
         if (player->GetTemporarySpellReplacement(id) != replacement)
-            player->SetTemporarySpellReplacement(id, 0);
+            player->SetTemporarySpellReplacement(id, 0, player->HasActiveSpell(id));
     }
     std::vector<uint32> candidates(Conqueror.begin(), Conqueror.end());
     candidates.insert(candidates.end(), Dragonslayer.begin(), Dragonslayer.end());
