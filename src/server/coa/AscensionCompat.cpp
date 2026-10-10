@@ -8909,7 +8909,7 @@ class spell_ascension_wildcard_mount : public SpellScript
         {
             Player* player = ObjectAccessor::FindPlayer(owner);
             if (player && player->IsAlive() && player->IsInWorld() && player->HasSpell(mount) &&
-                !player->IsNonMeleeSpellCast(false))
+                !player->IsNonMeleeSpellCast(false, false, true))
                 player->CastSpell(player, mount, false);
         }, 1ms);
     }
