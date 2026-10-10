@@ -629,7 +629,7 @@ void ObserveExtensionPacket(Actor& actor, WorldPacket const& packet)
         packet.GetOpcode() != SMSG_SUPERCEDED_SPELL && packet.GetOpcode() != SMSG_REMOVED_SPELL &&
         packet.GetOpcode() != SMSG_ITEM_QUERY_SINGLE_RESPONSE && packet.GetOpcode() != SMSG_MOVE_KNOCK_BACK &&
         packet.GetOpcode() != SMSG_DUEL_REQUESTED && packet.GetOpcode() != SMSG_DUEL_COUNTDOWN &&
-        packet.GetOpcode() != SMSG_DUEL_COMPLETE)
+        packet.GetOpcode() != SMSG_DUEL_COMPLETE && packet.GetOpcode() != SMSG_SEND_MAIL_RESULT)
         return;
 
     ++actor.extensionPackets[packet.GetOpcode()];
@@ -1153,14 +1153,26 @@ public:
                     if (auto row = step.second.get_optional<uint32>("row"))
                         actor.selectedPacketRows.try_emplace(
                             std::pair{ uint16(step.second.get<uint32>("opcode")), *row });
-            actor.account = "CT" + _runId + std::to_string(index);
+            auto const accountOf = entry.second.get_optional<std::string>("account_of");
+            if (accountOf)
+            {
+                auto const owner = _actors.find(*accountOf);
+                Require(owner != _actors.end() && owner->first != id && !owner->second.account.empty(),
+                    "account_of must reference an earlier player");
+                actor.account = owner->second.account;
+            }
+            else
+                actor.account = "CT" + _runId + std::to_string(index);
             actor.name = FixtureName(entry.second, index++);
             actor.generatedName = _names && !entry.second.get_optional<std::string>("name");
             Require(normalizePlayerName(actor.name), "Invalid fixture character name");
             for (auto const& [otherId, other] : _actors)
                 Require(otherId == id || other.name != actor.name, "Duplicate fixture character name");
-            Require(AccountMgr::GetId(actor.account) == 0, "Test account already exists");
-            Require(sAccountMgr->CreateAccount(actor.account, _runId) == AOR_OK, "Account creation failed");
+            if (!accountOf)
+            {
+                Require(AccountMgr::GetId(actor.account) == 0, "Test account already exists");
+                Require(sAccountMgr->CreateAccount(actor.account, _runId) == AOR_OK, "Account creation failed");
+            }
             LookUpAccount(id);
         }
     }
@@ -3912,6 +3924,18 @@ private:
                             request << value.get_value<std::string>();
                         else if (kind == "buyback_guid")
                             request << BuybackGuid(player, value.get_value<uint32>());
+                        else if (kind == "item_guid")
+                        {
+                            Item* item = player->GetItemByEntry(value.get_value<uint32>());
+                            Require(item != nullptr, "Packet item GUID requires a carried item");
+                            request << item->GetGUID().GetRawValue();
+                        }
+                        else if (kind == "gameobject_guid")
+                        {
+                            std::list<GameObject*> objects = OwnedGameObjects(player, value.get_value<uint32>());
+                            Require(objects.size() == 1, "Packet gameobject GUID requires exactly one owned object");
+                            request << objects.front()->GetGUID().GetRawValue();
+                        }
                         else if (kind == "stabled_pet")
                             request << StabledPetNumber(player, value.get_value<uint32>());
                         else if (kind == "actor_guid")

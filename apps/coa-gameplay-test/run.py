@@ -303,10 +303,13 @@ def validate(scenario):
         keys(player, {'id', 'race', 'class'},
              {'id', 'race', 'class', 'level', 'bot', 'spell_hit_rating', 'spell_crit_rating',
               'melee_crit_rating', 'ranged_crit_rating', 'ranged_hit_rating', 'melee_hit_rating',
-              'expertise_rating', 'allow_regeneration', 'name', 'expansion', 'ascension_client'}, 'player')
+              'expertise_rating', 'allow_regeneration', 'name', 'expansion', 'ascension_client', 'account_of'}, 'player')
         identity = player['id']
         require(isinstance(identity, str) and ACTOR_ID.fullmatch(identity), 'Invalid player id')
         require(identity not in actor_ids, 'Duplicate actor id')
+        if 'account_of' in player:
+            require(isinstance(player['account_of'], str) and player['account_of'] in player_ids,
+                    'account_of must reference an earlier player')
         actor_ids.add(identity)
         player_ids.add(identity)
         if 'name' in player:
@@ -540,7 +543,8 @@ def validate(scenario):
             for index, field in enumerate(fields):
                 require(isinstance(field, dict) and len(field) == 1, f'{where}.fields[{index}]: expected one typed value')
                 (kind, value), = field.items()
-                require(kind in {'u8', 'u32', 'u64', 'string', 'buyback_guid', 'actor_guid', 'packed_actor_guid',
+                require(kind in {'u8', 'u32', 'u64', 'string', 'buyback_guid', 'item_guid', 'gameobject_guid',
+                                 'actor_guid', 'packed_actor_guid',
                                  'pet_guid', 'stabled_pet', 'duel_arbiter',
                                  'wildcard_entry', 'wildcard_pending_cards', 'wildcard_lowest_card'},
                         f'{where}.fields[{index}]: unknown field type')
@@ -552,6 +556,7 @@ def validate(scenario):
                     require(value in player_ids, f'{where}.fields[{index}]: expected a player id')
                 else:
                     maximum = {'u8': 255, 'u32': 2**32 - 1, 'u64': 2**64 - 1, 'buyback_guid': 2**31 - 1,
+                               'item_guid': 2**32 - 1, 'gameobject_guid': 2**32 - 1,
                                'stabled_pet': 3, 'wildcard_entry': 255, 'wildcard_pending_cards': 1000,
                                'wildcard_lowest_card': 7}[kind]
                     number(value, f'{where}.fields[{index}]', 0, maximum, True)
