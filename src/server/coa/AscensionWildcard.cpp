@@ -202,6 +202,7 @@ enum AdvancementDwordField : uint32
     ADVANCEMENT_SPELLS            = 5,
     ADVANCEMENT_RANK_COUNT        = 5,
     ADVANCEMENT_WILDCARD_LEVEL    = 28,
+    ADVANCEMENT_WILDCARD_AE       = 22,
     ADVANCEMENT_GROUP             = 29,
     ADVANCEMENT_FLAGS             = 120,
     ADVANCEMENT_MODES             = 121,
@@ -323,6 +324,8 @@ Spent SpentEssence(std::vector<Slot> const& slots)
             continue;
         if (slot.Talent)
             spent.Talent += TALENT_ROLL_COST;
+        else if (auto const cost = Loaded.AbilityCosts.find(slot.EntryId); cost != Loaded.AbilityCosts.end())
+            spent.Ability += cost->second;
         else
             spent.Ability += ABILITY_ROLL_COST;
     }
@@ -526,6 +529,11 @@ void LoadTables()
         if (entry.RankSpells.empty())
             continue;
         entry.Glyph = IsGlyph(entry.RankSpells.front());
+        if (!talent)
+        {
+            entry.AbilityCost = record.GetUInt32(ADVANCEMENT_WILDCARD_AE);
+            tables.AbilityCosts[entry.EntryId] = entry.AbilityCost;
+        }
         tables.Entries.push_back(std::move(entry));
     }
 
@@ -2614,7 +2622,7 @@ std::optional<Slot> RollLevelEntry(Tables const& tables, std::vector<Slot> const
 
     auto const eligible = [&](Entry const& entry)
     {
-        return entry.Talent == talent && !entry.Glyph && entry.MinLevel <= poolLevel && !known.count(entry.EntryId) &&
+        return entry.Talent == talent && !entry.Glyph && (entry.Talent || entry.AbilityCost) && entry.MinLevel <= poolLevel && !known.count(entry.EntryId) &&
             entry.EntryId != excludedEntry && !(tameKnown && entry.Group == TAME_GROUP) &&
             !entry.RankSpells.empty() && available(entry.RankSpells.front());
     };
