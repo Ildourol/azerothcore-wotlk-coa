@@ -4974,7 +4974,14 @@ private:
             Require(request.ItemGuid == item->GetGUID() && request.DestinationSlot == slot,
                 "Equipment packet did not round-trip");
             player->GetSession()->HandleAutoEquipItemSlotOpcode(request);
-            if (player->GetItemByPos(INVENTORY_SLOT_BAG_0, uint8(slot)) != item)
+            if (step.get<bool>("rejected", false))
+            {
+                Require(player->GetItemByPos(INVENTORY_SLOT_BAG_0, uint8(slot)) != item,
+                    "Equipment change was expected to be rejected");
+                uint16 destination = 0;
+                record.put("result", std::to_string(player->CanEquipItem(uint8(slot), destination, item, true)));
+            }
+            else if (player->GetItemByPos(INVENTORY_SLOT_BAG_0, uint8(slot)) != item)
             {
                 uint16 destination = 0;
                 InventoryResult equip = player->CanEquipItem(uint8(slot), destination, item, true);

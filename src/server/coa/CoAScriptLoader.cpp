@@ -65,6 +65,7 @@ void AddSC_AscensionWildcardRecuperate();
 void AddSC_AscensionWildcardCorruptedBear();
 void AddSC_AscensionWildcardBloodbath();
 void AddSC_AscensionWildcardSolarStrike();
+void AddSC_AscensionHeroDarkApotheosis();
 void AddSC_AscensionWildcardCremation();
 void AddSC_AscensionWildcardElementalBlast();
 void AddAscensionFreepickScripts();
@@ -633,6 +634,7 @@ void AddCoAScripts()
     AddSC_AscensionWildcardCorruptedBear();
     AddSC_AscensionWildcardBloodbath();
     AddSC_AscensionWildcardSolarStrike();
+    AddSC_AscensionHeroDarkApotheosis();
     AddSC_AscensionWildcardCremation();
     AddSC_AscensionWildcardElementalBlast();
     AddAscensionFreepickScripts();
